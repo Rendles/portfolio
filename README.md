@@ -4,7 +4,7 @@ Bilingual (RU/EN) personal portfolio of **Roman Shuklin** — interface designer
 
 The twist: it's not one design — it's a **design-mode engine**. The same content is rendered through completely different design languages you can switch on the fly. The site itself is the demo of range (design) and skill (code).
 
-🔗 Live: _coming soon_
+🔗 **Live:** https://portfolio-virid-five-19.vercel.app
 
 ## Modes
 
