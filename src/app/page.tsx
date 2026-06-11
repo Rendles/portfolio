@@ -22,6 +22,9 @@ const ArcadeMode = dynamic(
   () => import("@/modes/arcade/ArcadeMode").then((m) => m.ArcadeMode),
   { ssr: false }
 );
+const GlassMode = dynamic(() =>
+  import("@/modes/glass/GlassMode").then((m) => m.GlassMode)
+);
 
 export default function Page() {
   const { mode } = useApp();
@@ -46,6 +49,8 @@ export default function Page() {
           <MinimalMode />
         ) : mode === "arcade" ? (
           <ArcadeMode />
+        ) : mode === "glass" ? (
+          <GlassMode />
         ) : (
           <ModePlaceholder meta={meta} />
         )}

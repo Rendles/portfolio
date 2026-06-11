@@ -44,7 +44,7 @@ export const MODES: ModeMeta[] = [
     blurb: { ru: "Матовая глубина и свет", en: "Frosted depth & light" },
     accent: "#7cc6ff",
     theme: "dark",
-    ready: false,
+    ready: true,
   },
   {
     id: "arcade",
