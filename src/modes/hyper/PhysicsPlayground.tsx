@@ -49,12 +49,15 @@ export function PhysicsPlayground({ locale }: { locale: Locale }) {
     const engine = Engine.create({ gravity: { x: 0, y: 0, scale: 0 } });
     const world = engine.world;
 
+    // толстые стены (внутренняя грань ровно по краю сцены) — меньше шанс
+    // «протуннелировать» при быстром броске
+    const WALL_T = 200;
     const wallOpts = { isStatic: true, restitution: 0.7, render: { visible: false } };
     const makeWalls = () => [
-      Bodies.rectangle(width / 2, -40, width + 200, 80, wallOpts), // верх
-      Bodies.rectangle(width / 2, height + 40, width + 200, 80, wallOpts), // низ
-      Bodies.rectangle(-40, height / 2, 80, height * 2, wallOpts), // лево
-      Bodies.rectangle(width + 40, height / 2, 80, height * 2, wallOpts), // право
+      Bodies.rectangle(width / 2, -WALL_T / 2, width + 400, WALL_T, wallOpts), // верх
+      Bodies.rectangle(width / 2, height + WALL_T / 2, width + 400, WALL_T, wallOpts), // низ
+      Bodies.rectangle(-WALL_T / 2, height / 2, WALL_T, height * 2 + 400, wallOpts), // лево
+      Bodies.rectangle(width + WALL_T / 2, height / 2, WALL_T, height * 2 + 400, wallOpts), // право
     ];
     let walls = makeWalls();
     World.add(world, walls);
@@ -80,8 +83,19 @@ export function PhysicsPlayground({ locale }: { locale: Locale }) {
     });
     World.add(world, bodies);
 
-    // мышь: и для перетаскивания, и для отслеживания позиции (отталкивание)
+    // зажать центр тела в рамке сцены по его реальному AABB (с учётом поворота)
+    const clampInside = (b: Matter.Body, x: number, y: number) => {
+      const halfW = (b.bounds.max.x - b.bounds.min.x) / 2;
+      const halfH = (b.bounds.max.y - b.bounds.min.y) / 2;
+      const cx = width - halfW < halfW ? width / 2 : Math.min(Math.max(x, halfW), width - halfW);
+      const cy =
+        height - halfH < halfH ? height / 2 : Math.min(Math.max(y, halfH), height - halfH);
+      return { cx, cy };
+    };
+
+    // ── ввод: родной MouseConstraint (естественно тащит и сталкивает) ──
     const mouse = Mouse.create(scene);
+    // снять матеровский wheel-листенер, чтобы колесо скроллило страницу
     scene.removeEventListener(
       "wheel",
       (mouse as unknown as { mousewheel: EventListener }).mousewheel
@@ -98,21 +112,41 @@ export function PhysicsPlayground({ locale }: { locale: Locale }) {
     scene.addEventListener("pointerenter", onEnter);
     scene.addEventListener("pointerleave", onLeave);
 
-    // отталкивание от курсора каждый кадр
     Matter.Events.on(engine, "beforeUpdate", () => {
+      // КЛЮЧЕВОЕ: зажимаем ЦЕЛЬ перетаскивания (точку, к которой констрейнт
+      // тянет плашку) в рамке сцены. MouseConstraint.update уже отработал и
+      // выставил mc.body + constraint.pointA = mouse.position (по ссылке), а
+      // солвер сработает после нас → правка попадает в этот же кадр.
+      // Курсор не уводит цель за стену ⇒ нет ни вылета, ни пружинной тряски.
+      if (mc.body) {
+        const c = clampInside(mc.body, mouse.position.x, mouse.position.y);
+        mouse.position.x = c.cx;
+        mouse.position.y = c.cy;
+      }
+
+      // отталкивание свободных плашек от курсора
       if (!pointerInside) return;
-      const m = mouse.position;
       for (const b of bodies) {
-        if (mc.body === b) continue; // тот, что схвачен — не отталкиваем
-        const dx = b.position.x - m.x;
-        const dy = b.position.y - m.y;
+        if (mc.body === b) continue; // схваченную — не отталкиваем
+        const dx = b.position.x - mouse.position.x;
+        const dy = b.position.y - mouse.position.y;
         const dist = Math.hypot(dx, dy) || 0.001;
         if (dist < REPEL_RADIUS) {
-          const force = (0.03 * (1 - dist / REPEL_RADIUS)) * b.mass;
-          Body.applyForce(b, b.position, {
-            x: (dx / dist) * force,
-            y: (dy / dist) * force,
-          });
+          const force = 0.03 * (1 - dist / REPEL_RADIUS) * b.mass;
+          Body.applyForce(b, b.position, { x: (dx / dist) * force, y: (dy / dist) * force });
+        }
+      }
+    });
+
+    // страховка: возвращаем СВОБОДНЫЕ тела в рамку (ловит редкий вылет при броске).
+    // Схваченную (mc.body) не трогаем — её цель уже зажата выше, без тряски.
+    Matter.Events.on(engine, "afterUpdate", () => {
+      for (const b of bodies) {
+        if (mc.body === b) continue;
+        const { cx, cy } = clampInside(b, b.position.x, b.position.y);
+        if (cx !== b.position.x || cy !== b.position.y) {
+          Body.setPosition(b, { x: cx, y: cy });
+          Body.setVelocity(b, { x: b.velocity.x * 0.3, y: b.velocity.y * 0.3 });
         }
       }
     });

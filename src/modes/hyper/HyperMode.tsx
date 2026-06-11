@@ -205,7 +205,7 @@ export function HyperMode() {
   const skillsFlat = site.skills.flatMap((g) => g.items).slice(0, 9);
 
   return (
-    <div className="relative cursor-none text-white">
+    <div className="relative cursor-none overflow-x-clip text-white">
       <ShaderBackground />
       <HyperCursor />
 

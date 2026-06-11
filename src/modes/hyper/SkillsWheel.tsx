@@ -109,7 +109,12 @@ function WheelCard({
   meta: { accent: string; effect: EffectId };
   locale: Locale;
 }) {
-  const angleAt = (p: number) => index * ((2 * Math.PI) / total) + p * 2 * Math.PI;
+  // Раскладка по кольцу: карточка i выходит вперёд (угол = π) при p = i/(total-1).
+  // Оборот за весь скролл = (total-1)/total круга (а не полный) → каждая карточка
+  // появляется спереди ровно один раз, по порядку; в конце спереди — последняя.
+  const span = total > 1 ? total - 1 : 1;
+  const angleAt = (p: number) =>
+    Math.PI + (p * span - index) * ((2 * Math.PI) / total);
   const normAt = (p: number) => (1 - Math.cos(angleAt(p))) / 2; // 1 спереди, 0 сзади
 
   const left = useTransform(progress, (p) => `${CX + R * Math.cos(angleAt(p))}%`);

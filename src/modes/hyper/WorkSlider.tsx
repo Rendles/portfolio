@@ -53,8 +53,9 @@ export function WorkSlider({ locale }: { locale: Locale }) {
       >
         <motion.div
           className="absolute inset-0"
-          style={{ transformStyle: "preserve-3d" }}
+          style={{ transformStyle: "preserve-3d", touchAction: "pan-y" }}
           drag="x"
+          dragDirectionLock
           dragConstraints={{ left: 0, right: 0 }}
           dragElastic={0.16}
           onDragEnd={onDragEnd}
@@ -71,11 +72,8 @@ export function WorkSlider({ locale }: { locale: Locale }) {
               <motion.div
                 key={p.id}
                 role="button"
-                tabIndex={isActive ? -1 : 0}
+                tabIndex={-1}
                 onClick={() => !isActive && setActive(i)}
-                onKeyDown={(e) => {
-                  if (!isActive && (e.key === "Enter" || e.key === " ")) setActive(i);
-                }}
                 animate={tf}
                 transition={{ type: "spring", stiffness: 130, damping: 20 }}
                 className="absolute left-1/2 top-1/2 -ml-[150px] -mt-[220px] w-[300px] cursor-pointer sm:-ml-[210px] sm:-mt-[270px] sm:w-[420px]"
