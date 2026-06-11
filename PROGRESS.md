@@ -8,12 +8,12 @@
 - **HYPERMODE** (`src/modes/hyper/`): шейдерный фон + частицы (`ShaderBackground`), курсор (`HyperCursor`), Lenis, hero, 3D-слайдер (`WorkSlider`), физика (`PhysicsPlayground`, matter.js), колесо навыков со скролл-вращением и эффектами (`SkillsWheel`), блок ИИ с иконками Simple Icons.
 - **Брутализм** (`src/modes/brutal/BrutalMode.tsx`).
 - **Минимал** (`src/modes/minimal/MinimalMode.tsx`).
+- **Аркада / Терминал** (`src/modes/arcade/ArcadeMode.tsx`): CRT-оверлей (сканлайны, виньетка, мерцание), boot-секвенция при входе, эффект печати таглайна, живые часы, проекты как «модули», тема ИБ, accent `#34ff8a`. CRT-кейфреймы — в `globals.css` (`arc-scan`, `arc-flicker`, `arc-glitch`, `arc-pulse-ring`).
 - Деплой на Vercel (прод): https://portfolio-virid-five-19.vercel.app
 
 ## Осталось
 
 - [ ] Режим **Жидкое стекло** (`glass`) — сейчас заглушка. Глассморфизм: матовые слои, глубина, преломление, свет. Тёмная тема, accent `#7cc6ff`.
-- [ ] Режим **Аркада / Терминал** (`arcade`) — заглушка. Игровой/хакерский, тема ИБ. Тёмная тема, accent `#34ff8a`.
 - [ ] Авто-деплой: подключить Git-репозиторий в настройках проекта Vercel (Settings → Git).
 - [ ] Свой домен (опц.), реальные скриншоты проектов (опц.).
 

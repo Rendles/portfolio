@@ -52,7 +52,7 @@ export const MODES: ModeMeta[] = [
     blurb: { ru: "Игровой терминал", en: "Game terminal" },
     accent: "#34ff8a",
     theme: "dark",
-    ready: false,
+    ready: true,
   },
 ];
 

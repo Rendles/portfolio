@@ -17,6 +17,11 @@ const BrutalMode = dynamic(() =>
 const MinimalMode = dynamic(() =>
   import("@/modes/minimal/MinimalMode").then((m) => m.MinimalMode)
 );
+// Arcade использует эффект печати + живые часы → только на клиенте (избегаем гидрации).
+const ArcadeMode = dynamic(
+  () => import("@/modes/arcade/ArcadeMode").then((m) => m.ArcadeMode),
+  { ssr: false }
+);
 
 export default function Page() {
   const { mode } = useApp();
@@ -39,6 +44,8 @@ export default function Page() {
           <BrutalMode />
         ) : mode === "minimal" ? (
           <MinimalMode />
+        ) : mode === "arcade" ? (
+          <ArcadeMode />
         ) : (
           <ModePlaceholder meta={meta} />
         )}
