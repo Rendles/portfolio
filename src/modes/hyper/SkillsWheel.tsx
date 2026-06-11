@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useScroll,
@@ -42,6 +42,17 @@ export function SkillsWheel({ locale }: { locale: Locale }) {
   });
 
   const groups = site.skills;
+
+  // «облегчённый» рендер на мобильных/тач-устройствах: отключаем backdrop-blur
+  // и декоративные анимации эффектов — они сильнее всего лагают при скролле.
+  const [lite, setLite] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px), (pointer: coarse)");
+    const update = () => setLite(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   return (
     <section
@@ -85,6 +96,7 @@ export function SkillsWheel({ locale }: { locale: Locale }) {
                 group={g}
                 meta={META[i % META.length]}
                 locale={locale}
+                lite={lite}
               />
             ))}
           </div>
@@ -101,6 +113,7 @@ function WheelCard({
   group,
   meta,
   locale,
+  lite,
 }: {
   progress: MotionValue<number>;
   index: number;
@@ -108,6 +121,7 @@ function WheelCard({
   group: SkillGroup;
   meta: { accent: string; effect: EffectId };
   locale: Locale;
+  lite: boolean;
 }) {
   // Раскладка по кольцу: карточка i выходит вперёд (угол = π) при p = i/(total-1).
   // Оборот за весь скролл = (total-1)/total круга (а не полный) → каждая карточка
@@ -134,14 +148,19 @@ function WheelCard({
       className="absolute w-[280px] sm:w-[340px]"
     >
       <div
-        className="relative h-[360px] overflow-hidden rounded-[28px] border p-7 backdrop-blur-md sm:h-[400px]"
+        className={`relative h-[360px] overflow-hidden rounded-[28px] border p-7 sm:h-[400px] ${
+          lite ? "" : "backdrop-blur-md"
+        }`}
         style={{
           borderColor: `${meta.accent}55`,
-          background: "rgba(9,9,13,0.82)",
-          boxShadow: `0 30px 80px -24px ${meta.accent}55`,
+          // на мобильных фон непрозрачный (без backdrop-blur), тень мягче и дешевле
+          background: lite ? "#0b0b10" : "rgba(9,9,13,0.82)",
+          boxShadow: lite
+            ? `0 10px 24px -16px ${meta.accent}66`
+            : `0 30px 80px -24px ${meta.accent}55`,
         }}
       >
-        <Effect id={meta.effect} accent={meta.accent} />
+        {!lite && <Effect id={meta.effect} accent={meta.accent} />}
 
         <div className="relative flex h-full flex-col">
           <span

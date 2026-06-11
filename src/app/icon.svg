@@ -1,0 +1,7 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" rx="24" fill="#0B0B0E"/>
+  <rect x="3" y="3" width="94" height="94" rx="21" fill="none" stroke="#C6FF3A" stroke-opacity="0.3" stroke-width="2"/>
+  <text x="50" y="51" text-anchor="middle" dominant-baseline="central"
+        font-family="'Segoe UI', Arial, Helvetica, sans-serif" font-weight="800"
+        font-size="46" letter-spacing="-3" fill="#C6FF3A">РШ</text>
+</svg>

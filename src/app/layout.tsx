@@ -3,10 +3,30 @@ import "./globals.css";
 import { AppProviders } from "@/providers/AppProviders";
 import { ModeSwitcher } from "@/components/ModeSwitcher";
 
+const SITE_URL = "https://portfolio-virid-five-19.vercel.app";
+const TITLE = "Роман Шуклин — дизайнер интерфейсов и frontend-разработчик";
+const DESCRIPTION =
+  "Дизайн + код в одном лице. React, Next.js, продуктовые SaaS. Один контент — разные дизайн-языки.";
+
 export const metadata: Metadata = {
-  title: "Роман Шуклин — дизайнер интерфейсов и frontend-разработчик",
-  description:
-    "Портфолио: дизайн + код. React, Next.js, продуктовые SaaS. Один контент — разные дизайн-языки.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    url: "/",
+    siteName: "Роман Шуклин — портфолио",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: TITLE }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/og.png"],
+  },
 };
 
 // Нестандартные шрифты Fontshare для разных дизайн-режимов
