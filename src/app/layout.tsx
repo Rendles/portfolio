@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppProviders } from "@/providers/AppProviders";
+import { ExhibitProvider } from "@/exhibits/ExhibitProvider";
 import { ModeSwitcher } from "@/components/ModeSwitcher";
 
 const SITE_URL = "https://portfolio-virid-five-19.vercel.app";
@@ -46,8 +47,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-full">
         <AppProviders>
-          {children}
-          <ModeSwitcher />
+          <ExhibitProvider>
+            {children}
+            <ModeSwitcher />
+          </ExhibitProvider>
         </AppProviders>
       </body>
     </html>

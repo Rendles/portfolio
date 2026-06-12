@@ -3,6 +3,8 @@
 import { motion } from "motion/react";
 import type { Project, Locale } from "@/content/site";
 import { ui } from "@/lib/i18n";
+import { useExhibit } from "@/exhibits/ExhibitProvider";
+import { hasExhibit } from "@/exhibits/registry";
 
 export function WorkCard({
   project,
@@ -14,6 +16,7 @@ export function WorkCard({
   locale: Locale;
 }) {
   const n = String(index + 1).padStart(2, "0");
+  const { openExhibit } = useExhibit();
 
   return (
     <motion.article
@@ -100,8 +103,27 @@ export function WorkCard({
               <span className="text-white/35">{ui.project.role[locale]}: </span>
               {project.role[locale]}
             </span>
-            {project.links.length > 0 ? (
+            {project.links.length > 0 || hasExhibit(project.id) ? (
               <div className="flex flex-wrap items-center gap-2">
+                {hasExhibit(project.id) && (
+                  <button
+                    type="button"
+                    data-cursor
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openExhibit(project.id);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold text-black transition-transform hover:scale-105"
+                    style={{
+                      background: project.accent,
+                      borderColor: project.accent,
+                      boxShadow: `0 0 16px ${project.accent}66, 0 0 2px ${project.accent}`,
+                    }}
+                  >
+                    <span aria-hidden>▶</span>
+                    {ui.project.demo[locale]}
+                  </button>
+                )}
                 {project.links.map((l) =>
                   l.kind === "live" ? (
                     <a

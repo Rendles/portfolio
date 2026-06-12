@@ -5,6 +5,8 @@ import { motion } from "motion/react";
 import { site, type Locale, type Project } from "@/content/site";
 import { ui } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
+import { useExhibit } from "@/exhibits/ExhibitProvider";
+import { hasExhibit } from "@/exhibits/registry";
 
 const PAPER = "#f6f5f1";
 const INK = "#1a1916";
@@ -338,6 +340,7 @@ function WorkRow({
   locale: Locale;
 }) {
   const [open, setOpen] = useState(false);
+  const { openExhibit } = useExhibit();
 
   return (
     <motion.div
@@ -370,7 +373,27 @@ function WorkRow({
 
         <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pl-0 sm:pl-10">
           <p className="text-sm text-black/55">{project.kind[locale]}</p>
-          <ProjectLinks project={project} locale={locale} />
+          {hasExhibit(project.id) ? (
+            <span className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
+              <button
+                type="button"
+                onClick={() => openExhibit(project.id)}
+                className="group/demo inline-flex cursor-pointer items-baseline gap-1.5 text-sm transition-opacity hover:opacity-80"
+                style={{ color: ACCENT }}
+              >
+                <span className="text-[9px]" aria-hidden>
+                  ●
+                </span>
+                <span className="relative">
+                  {ui.project.demo[locale]}
+                  <span className="absolute -bottom-0.5 left-0 h-px w-full bg-current opacity-40 transition-opacity duration-300 group-hover/demo:opacity-100" />
+                </span>
+              </button>
+              <ProjectLinks project={project} locale={locale} />
+            </span>
+          ) : (
+            <ProjectLinks project={project} locale={locale} />
+          )}
         </div>
 
         <motion.div
