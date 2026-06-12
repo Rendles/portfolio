@@ -100,18 +100,38 @@ export function WorkCard({
               <span className="text-white/35">{ui.project.role[locale]}: </span>
               {project.role[locale]}
             </span>
-            {project.link ? (
-              <a
-                href={project.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-cursor
-                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-black transition-transform hover:scale-105"
-                style={{ background: project.accent }}
-              >
-                {ui.project.visit[locale]}
-                <span aria-hidden>↗</span>
-              </a>
+            {project.links.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {project.links.map((l) =>
+                  l.kind === "live" ? (
+                    <a
+                      key={l.href}
+                      href={l.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-cursor
+                      className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-black transition-transform hover:scale-105"
+                      style={{ background: project.accent }}
+                    >
+                      {l.label[locale]}
+                      <span aria-hidden>↗</span>
+                    </a>
+                  ) : (
+                    <a
+                      key={l.href}
+                      href={l.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-cursor
+                      className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-transform hover:scale-105"
+                      style={{ borderColor: `${project.accent}66`, color: project.accent }}
+                    >
+                      {l.label[locale]}
+                      <span aria-hidden>↗</span>
+                    </a>
+                  )
+                )}
+              </div>
             ) : (
               <span className="text-xs uppercase tracking-wider text-white/35">
                 {ui.project.noLink[locale]}

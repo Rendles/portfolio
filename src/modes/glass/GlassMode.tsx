@@ -2,8 +2,8 @@
 
 import { useRef } from "react";
 import { motion } from "motion/react";
-import { site } from "@/content/site";
-import { ui } from "@/lib/i18n";
+import { featuredProjects, site, type Project, type ProjectLink } from "@/content/site";
+import { ui, type Locale } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
 
 /* ─── палитра ─── */
@@ -53,6 +53,35 @@ function Glass({
   );
 }
 
+/* пилюля-ссылка проекта: live — акцентная, github/store — прозрачная с границей */
+function LinkPill({
+  link,
+  locale,
+  small = false,
+}: {
+  link: ProjectLink;
+  locale: Locale;
+  small?: boolean;
+}) {
+  const size = small
+    ? "px-3 py-1 text-[11px]"
+    : "px-4 py-1.5 text-xs";
+  const tone =
+    link.kind === "live"
+      ? "border-[#7cc6ff]/40 bg-[#7cc6ff]/15 text-[#bfe0ff] hover:bg-[#7cc6ff]/30"
+      : "border-white/20 bg-transparent text-white/70 hover:border-white/40 hover:text-white";
+  return (
+    <a
+      href={link.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`rounded-full border font-medium transition-colors ${size} ${tone}`}
+    >
+      {link.label[locale]} ↗
+    </a>
+  );
+}
+
 /* подпись-команда секции */
 function SectionHead({ kicker, title }: { kicker: string; title: string }) {
   return (
@@ -68,6 +97,138 @@ function SectionHead({ kicker, title }: { kicker: string; title: string }) {
         {title}
       </h2>
     </div>
+  );
+}
+
+/* полная стеклянная карточка проекта */
+function ProjectCard({
+  project: p,
+  index,
+  locale,
+}: {
+  project: Project;
+  index: number;
+  locale: Locale;
+}) {
+  const head = { fontFamily: "var(--font-satoshi)" };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 26 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.4, delay: (index % 2) * 0.06 }}
+      className="h-full"
+    >
+      <Glass className="group/card relative h-full overflow-hidden p-6 transition-colors hover:border-white/30 sm:p-7">
+        {/* акцентное свечение проекта */}
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full opacity-40 blur-3xl transition-opacity duration-500 group-hover/card:opacity-70"
+          style={{ background: p.accent }}
+        />
+        <div className="relative">
+          <div className="flex items-center justify-between">
+            <span
+              className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] uppercase tracking-wider"
+              style={{ color: p.solo ? "#ffd27c" : "rgba(255,255,255,0.6)" }}
+            >
+              {p.solo ? ui.project.solo[locale] : "team"} · {p.year}
+            </span>
+            <span className="text-xs uppercase tracking-wider text-white/40">
+              0{index + 1}
+            </span>
+          </div>
+
+          <h3 className="mt-4 text-2xl font-semibold text-white sm:text-3xl" style={head}>
+            {p.title}
+          </h3>
+          <div className="mt-1 text-sm text-[#7cc6ff]/80">{p.kind[locale]}</div>
+
+          <p className="mt-4 text-sm leading-relaxed text-white/65">{p.summary[locale]}</p>
+
+          <div className="mt-5 flex flex-wrap gap-1.5">
+            {p.stack.map((s) => (
+              <span
+                key={s}
+                className="rounded-full border border-white/12 bg-white/5 px-2.5 py-1 text-[11px] text-white/60"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+            <span className="text-[11px] uppercase tracking-wider text-white/45">
+              {p.role[locale]}
+            </span>
+            {p.links.length > 0 ? (
+              <span className="flex flex-wrap items-center gap-2">
+                {p.links.map((l) => (
+                  <LinkPill key={l.href} link={l} locale={locale} />
+                ))}
+              </span>
+            ) : (
+              <span className="text-[11px] uppercase tracking-wider text-white/35">
+                {ui.project.noLink[locale]}
+              </span>
+            )}
+          </div>
+        </div>
+      </Glass>
+    </motion.div>
+  );
+}
+
+/* компактная строка-пилюля: без backdrop-blur, чтобы не плодить слои на мобильных */
+function CompactRow({
+  project: p,
+  index,
+  locale,
+}: {
+  project: Project;
+  index: number;
+  locale: Locale;
+}) {
+  const head = { fontFamily: "var(--font-satoshi)" };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-30px" }}
+      transition={{ duration: 0.35, delay: index * 0.05 }}
+    >
+      <div
+        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 transition-colors hover:border-white/25 hover:bg-white/[0.07] sm:rounded-full sm:px-5"
+        style={{ boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.10)" }}
+      >
+        <span
+          className="size-1.5 shrink-0 rounded-full"
+          style={{ background: p.accent, boxShadow: `0 0 8px ${p.accent}` }}
+        />
+        <span className="shrink-0 text-sm font-semibold text-white" style={head}>
+          {p.title}
+        </span>
+        <span className="hidden shrink-0 text-xs text-[#7cc6ff]/75 md:inline">
+          {p.kind[locale]}
+        </span>
+        <span className="hidden shrink-0 text-[11px] uppercase tracking-wider text-white/40 sm:inline">
+          {p.year}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-xs text-white/50">
+          {p.summary[locale]}
+        </span>
+        {p.links.length > 0 ? (
+          <span className="flex shrink-0 items-center gap-1.5">
+            {p.links.map((l) => (
+              <LinkPill key={l.href} link={l} locale={locale} small />
+            ))}
+          </span>
+        ) : (
+          <span className="shrink-0 text-[10px] uppercase tracking-wider text-white/35">
+            {ui.project.noLink[locale]}
+          </span>
+        )}
+      </div>
+    </motion.div>
   );
 }
 
@@ -234,75 +395,55 @@ export function GlassMode() {
         {/* WORK */}
         <section id="g-work" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
           <SectionHead kicker={ui.nav.work[locale]} title={ui.sections.workTitle[locale]} />
-          <div className="grid gap-5 md:grid-cols-2">
-            {site.projects.map((p, i) => (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 26 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.4, delay: (i % 2) * 0.06 }}
-              >
-                <Glass className="group/card relative h-full overflow-hidden p-6 transition-colors hover:border-white/30 sm:p-7">
-                  {/* акцентное свечение проекта */}
-                  <div
-                    className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full opacity-40 blur-3xl transition-opacity duration-500 group-hover/card:opacity-70"
-                    style={{ background: p.accent }}
-                  />
-                  <div className="relative">
-                    <div className="flex items-center justify-between">
-                      <span
-                        className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] uppercase tracking-wider"
-                        style={{ color: p.solo ? "#ffd27c" : "rgba(255,255,255,0.6)" }}
-                      >
-                        {p.solo ? ui.project.solo[locale] : "team"} · {p.year}
-                      </span>
-                      <span className="text-xs uppercase tracking-wider text-white/40">
-                        0{i + 1}
-                      </span>
-                    </div>
-
-                    <h3 className="mt-4 text-2xl font-semibold text-white sm:text-3xl" style={head}>
-                      {p.title}
+          <div className="space-y-16">
+            {site.workGroups.map((g) => {
+              const full = g.projects.filter((p) => p.tier === "full");
+              const compact = g.projects.filter((p) => p.tier === "compact");
+              return (
+                <div key={g.id}>
+                  {/* заголовок группы */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ duration: 0.4 }}
+                    className="mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-1"
+                  >
+                    <h3
+                      className="text-xl font-semibold tracking-tight text-white sm:text-2xl"
+                      style={{
+                        ...head,
+                        textShadow: `0 0 24px ${ACCENT}55`,
+                      }}
+                    >
+                      {g.title[locale]}
                     </h3>
-                    <div className="mt-1 text-sm text-[#7cc6ff]/80">{p.kind[locale]}</div>
+                    <p className="text-sm text-white/50">{g.blurb[locale]}</p>
+                  </motion.div>
 
-                    <p className="mt-4 text-sm leading-relaxed text-white/65">{p.summary[locale]}</p>
-
-                    <div className="mt-5 flex flex-wrap gap-1.5">
-                      {p.stack.map((s) => (
-                        <span
-                          key={s}
-                          className="rounded-full border border-white/12 bg-white/5 px-2.5 py-1 text-[11px] text-white/60"
-                        >
-                          {s}
-                        </span>
+                  {full.length > 0 && (
+                    <div className="grid gap-5 md:grid-cols-2">
+                      {full.map((p) => (
+                        <ProjectCard
+                          key={p.id}
+                          project={p}
+                          index={featuredProjects.indexOf(p)}
+                          locale={locale}
+                        />
                       ))}
                     </div>
+                  )}
 
-                    <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4">
-                      <span className="text-[11px] uppercase tracking-wider text-white/45">
-                        {p.role[locale]}
-                      </span>
-                      {p.link ? (
-                        <a
-                          href={p.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded-full border border-[#7cc6ff]/40 bg-[#7cc6ff]/15 px-4 py-1.5 text-xs font-medium text-[#bfe0ff] transition-colors hover:bg-[#7cc6ff]/30"
-                        >
-                          {ui.project.visit[locale]} ↗
-                        </a>
-                      ) : (
-                        <span className="text-[11px] uppercase tracking-wider text-white/35">
-                          {ui.project.noLink[locale]}
-                        </span>
-                      )}
+                  {compact.length > 0 && (
+                    <div className={`space-y-3 ${full.length > 0 ? "mt-5" : ""}`}>
+                      {compact.map((p, i) => (
+                        <CompactRow key={p.id} project={p} index={i} locale={locale} />
+                      ))}
                     </div>
-                  </div>
-                </Glass>
-              </motion.div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
 

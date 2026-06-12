@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { site } from "@/content/site";
+import { site, type Locale, type ProjectLink } from "@/content/site";
 import { ui } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
 
@@ -22,6 +22,51 @@ const AI_SLUGS: Record<string, string | undefined> = {
   Recraft: "recraft",
   Framer: "framer",
 };
+
+/* ─── псевдо-команды для типов ссылок проекта ─── */
+const LINK_TOKEN: Record<ProjectLink["kind"], string> = {
+  live: "run",
+  github: "git",
+  store: "store",
+};
+
+/* ─── кнопки-ссылки проекта: [run] / [git] / [store] ─── */
+function ProjectLinks({
+  links,
+  locale,
+  compact = false,
+}: {
+  links: ProjectLink[];
+  locale: Locale;
+  compact?: boolean;
+}) {
+  if (links.length === 0) {
+    return (
+      <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/35">
+        {ui.project.noLink[locale]}
+      </span>
+    );
+  }
+  return (
+    <span className={`flex flex-wrap ${compact ? "gap-1.5" : "gap-2"}`}>
+      {links.map((l) => (
+        <a
+          key={l.href}
+          href={l.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={
+            compact
+              ? "border border-[#34ff8a]/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#34ff8a]/70 transition-colors hover:border-[#34ff8a] hover:bg-[#34ff8a] hover:text-[#050806]"
+              : "inline-flex items-center gap-1.5 border border-[#34ff8a]/50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#34ff8a] transition-colors hover:bg-[#34ff8a] hover:text-[#050806]"
+          }
+        >
+          [{LINK_TOKEN[l.kind]}] {l.label[locale]} ↗
+        </a>
+      ))}
+    </span>
+  );
+}
 
 /* ─── эффект печати ─── */
 function useTypewriter(
@@ -338,74 +383,132 @@ export function ArcadeMode() {
           </Panel>
         </section>
 
-        {/* WORK — MODULES */}
+        {/* WORK — DIRECTORIES */}
         <section id="a-work" className="scroll-mt-16 px-4 py-16 sm:px-8">
-          <SectionHead cmd="ls ./projects --detail" title={ui.sections.workTitle[locale]} />
-          <div className="grid gap-5 md:grid-cols-2">
-            {site.projects.map((p, i) => (
-              <motion.article
-                key={p.id}
-                initial={{ opacity: 0, y: 22 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.3, delay: (i % 2) * 0.05 }}
-                className="group relative border border-[#34ff8a]/25 bg-[#34ff8a]/[0.02] p-5 transition-all hover:border-[#34ff8a]/70 hover:bg-[#34ff8a]/[0.05]"
-                style={{ boxShadow: "0 0 0 rgba(52,255,138,0)" }}
-              >
-                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-[#34ff8a]/50">
-                  <span>module_{String(i + 1).padStart(2, "0")}</span>
-                  <span style={{ color: p.solo ? AMBER : undefined }}>
-                    {p.solo ? `[${ui.project.solo[locale]}]` : "[team]"} · {p.year}
-                  </span>
-                </div>
+          <SectionHead cmd="ls ./projects -R" title={ui.sections.workTitle[locale]} />
+          <div className="space-y-14">
+            {site.workGroups.map((g) => {
+              const full = g.projects.filter((p) => p.tier === "full");
+              const compact = g.projects.filter((p) => p.tier === "compact");
+              return (
+                <div key={g.id}>
+                  {/* заголовок группы: команда + комментарий */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ duration: 0.3 }}
+                    className="mb-6"
+                  >
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span className="text-xs uppercase tracking-[0.2em] text-[#34ff8a]/50">
+                        {"> "}ls ./{g.id}
+                      </span>
+                      <h3
+                        className="text-2xl font-bold uppercase tracking-tight sm:text-3xl"
+                        style={{ textShadow: `0 0 18px ${GREEN}44` }}
+                      >
+                        {g.title[locale]}
+                      </h3>
+                      <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/40">
+                        [{g.projects.length} items]
+                      </span>
+                    </div>
+                    <p className="mt-1.5 max-w-2xl text-sm text-[#34ff8a]/55">
+                      <span className="text-[#34ff8a]/35"># </span>
+                      {g.blurb[locale]}
+                    </p>
+                  </motion.div>
 
-                <h3
-                  className="mt-2 text-2xl font-bold uppercase sm:text-3xl"
-                  style={{ textShadow: `0 0 18px ${GREEN}44` }}
-                >
-                  {p.title}
-                </h3>
-                <div className="mt-1 text-xs uppercase tracking-wider text-[#34ff8a]/60">
-                  {p.kind[locale]}
-                </div>
+                  {/* полные карточки */}
+                  {full.length > 0 && (
+                    <div className="grid gap-5 md:grid-cols-2">
+                      {full.map((p, i) => (
+                        <motion.article
+                          key={p.id}
+                          initial={{ opacity: 0, y: 22 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true, margin: "-40px" }}
+                          transition={{ duration: 0.3, delay: (i % 2) * 0.05 }}
+                          className="group relative border border-[#34ff8a]/25 bg-[#34ff8a]/[0.02] p-5 transition-all hover:border-[#34ff8a]/70 hover:bg-[#34ff8a]/[0.05]"
+                          style={{ boxShadow: "0 0 0 rgba(52,255,138,0)" }}
+                        >
+                          <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-[#34ff8a]/50">
+                            <span>./{g.id}/{p.id}</span>
+                            <span style={{ color: p.solo ? AMBER : undefined }}>
+                              {p.solo ? `[${ui.project.solo[locale]}]` : "[team]"} · {p.year}
+                            </span>
+                          </div>
 
-                <p className="mt-3 text-sm leading-relaxed text-[#d6ffe8]/75">
-                  <span className="text-[#34ff8a]/40">{"// "}</span>
-                  {p.summary[locale]}
-                </p>
+                          <h4
+                            className="mt-2 text-2xl font-bold uppercase sm:text-3xl"
+                            style={{ textShadow: `0 0 18px ${GREEN}44` }}
+                          >
+                            {p.title}
+                          </h4>
+                          <div className="mt-1 text-xs uppercase tracking-wider text-[#34ff8a]/60">
+                            {p.kind[locale]}
+                          </div>
 
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  {p.stack.map((s) => (
-                    <span
-                      key={s}
-                      className="border border-[#34ff8a]/25 px-2 py-0.5 text-[11px] text-[#34ff8a]/70"
+                          <p className="mt-3 text-sm leading-relaxed text-[#d6ffe8]/75">
+                            <span className="text-[#34ff8a]/40">{"// "}</span>
+                            {p.summary[locale]}
+                          </p>
+
+                          <div className="mt-4 flex flex-wrap gap-1.5">
+                            {p.stack.map((s) => (
+                              <span
+                                key={s}
+                                className="border border-[#34ff8a]/25 px-2 py-0.5 text-[11px] text-[#34ff8a]/70"
+                              >
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+
+                          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#34ff8a]/15 pt-4">
+                            <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/45">
+                              {p.role[locale]}
+                            </span>
+                            <ProjectLinks links={p.links} locale={locale} />
+                          </div>
+                        </motion.article>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* компактные строки листинга */}
+                  {compact.length > 0 && (
+                    <motion.ul
+                      initial={{ opacity: 0, y: 16 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-40px" }}
+                      transition={{ duration: 0.3 }}
+                      className={`divide-y divide-[#34ff8a]/10 border border-[#34ff8a]/20 ${full.length > 0 ? "mt-5" : ""}`}
                     >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-5 flex items-center justify-between border-t border-[#34ff8a]/15 pt-4">
-                  <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/45">
-                    {p.role[locale]}
-                  </span>
-                  {p.link ? (
-                    <a
-                      href={p.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 border border-[#34ff8a]/50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#34ff8a] transition-colors hover:bg-[#34ff8a] hover:text-[#050806]"
-                    >
-                      [run] {ui.project.visit[locale]} ↗
-                    </a>
-                  ) : (
-                    <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/35">
-                      {ui.project.noLink[locale]}
-                    </span>
+                      {compact.map((p) => (
+                        <li
+                          key={p.id}
+                          className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors hover:bg-[#34ff8a]/[0.06]"
+                        >
+                          <span className="text-[11px] text-[#34ff8a]/35">-rw-</span>
+                          <span className="text-sm font-bold uppercase text-[#d6ffe8]/90 transition-colors group-hover:text-[#34ff8a]">
+                            {p.title}
+                          </span>
+                          <span className="text-xs uppercase tracking-wider text-[#34ff8a]/55">
+                            {p.kind[locale]}
+                          </span>
+                          <span className="text-xs tabular-nums text-[#34ff8a]/40">{p.year}</span>
+                          <span className="ml-auto">
+                            <ProjectLinks links={p.links} locale={locale} compact />
+                          </span>
+                        </li>
+                      ))}
+                    </motion.ul>
                   )}
                 </div>
-              </motion.article>
-            ))}
+              );
+            })}
           </div>
         </section>
 

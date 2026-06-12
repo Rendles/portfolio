@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { motion } from "motion/react";
-import { site } from "@/content/site";
+import { site, type Locale, type Project } from "@/content/site";
 import { ui } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
 
@@ -134,9 +134,32 @@ export function MinimalMode() {
         </Reveal>
 
         <div>
-          {site.projects.map((p, i) => (
-            <WorkRow key={p.id} project={p} index={i} locale={locale} />
-          ))}
+          {site.workGroups.map((group, gi) => {
+            const offset = site.workGroups
+              .slice(0, gi)
+              .reduce((n, g) => n + g.projects.length, 0);
+            return (
+              <div key={group.id} className={gi > 0 ? "mt-16 border-t border-black/10 pt-14" : ""}>
+                <Reveal>
+                  <div className="mb-6 max-w-2xl">
+                    <Eyebrow>{group.title[locale]}</Eyebrow>
+                    <p className="mt-2.5 text-sm font-light leading-relaxed text-black/50">
+                      {group.blurb[locale]}
+                    </p>
+                  </div>
+                </Reveal>
+                <div>
+                  {group.projects.map((p, i) =>
+                    p.tier === "full" ? (
+                      <WorkRow key={p.id} project={p} index={offset + i} locale={locale} />
+                    ) : (
+                      <CompactRow key={p.id} project={p} index={offset + i} locale={locale} />
+                    )
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -274,14 +297,45 @@ export function MinimalMode() {
   );
 }
 
+function ProjectLinks({ project, locale }: { project: Project; locale: Locale }) {
+  if (project.links.length === 0) {
+    return <span className="text-sm font-light text-black/35">{ui.project.noLink[locale]}</span>;
+  }
+
+  return (
+    <span className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
+      {project.links.map((l) => (
+        <a
+          key={l.href}
+          href={l.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group/link inline-flex items-baseline gap-1 text-sm text-black/60 transition-colors hover:text-[#a85a3c]"
+        >
+          <span className="relative">
+            {l.label[locale]}
+            <span className="absolute -bottom-0.5 left-0 h-px w-full bg-current opacity-30 transition-opacity duration-300 group-hover/link:opacity-100" />
+          </span>
+          <span
+            className="text-xs transition-transform duration-300 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5"
+            aria-hidden
+          >
+            ↗
+          </span>
+        </a>
+      ))}
+    </span>
+  );
+}
+
 function WorkRow({
   project,
   index,
   locale,
 }: {
-  project: (typeof site.projects)[number];
+  project: Project;
   index: number;
-  locale: import("@/content/site").Locale;
+  locale: Locale;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -292,13 +346,10 @@ function WorkRow({
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
     >
-      <a
-        {...(project.link
-          ? { href: project.link, target: "_blank", rel: "noopener noreferrer" }
-          : {})}
+      <div
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        className="group block border-b border-black/10 py-7"
+        className="group border-b border-black/10 py-7"
       >
         <div className="flex items-baseline justify-between gap-4">
           <div className="flex items-baseline gap-5">
@@ -313,18 +364,13 @@ function WorkRow({
             </h3>
           </div>
           <span className="hidden shrink-0 text-sm text-black/45 sm:block">
-            {project.year} · {project.solo ? ui.project.solo[locale] : "team"}
+            {project.year} · {project.solo ? ui.project.solo[locale] : locale === "ru" ? "команда" : "team"}
           </span>
         </div>
 
-        <div className="mt-3 flex items-center justify-between pl-0 sm:pl-10">
+        <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pl-0 sm:pl-10">
           <p className="text-sm text-black/55">{project.kind[locale]}</p>
-          <span
-            className="text-lg text-black/40 transition-all duration-500 group-hover:translate-x-1 group-hover:text-[#a85a3c]"
-            aria-hidden
-          >
-            {project.link ? "↗" : "·"}
-          </span>
+          <ProjectLinks project={project} locale={locale} />
         </div>
 
         <motion.div
@@ -340,7 +386,42 @@ function WorkRow({
             ))}
           </div>
         </motion.div>
-      </a>
+      </div>
+    </motion.div>
+  );
+}
+
+function CompactRow({
+  project,
+  index,
+  locale,
+}: {
+  project: Project;
+  index: number;
+  locale: Locale;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 border-b border-black/[0.07] py-4">
+        <span className="text-xs text-black/30" style={mono}>
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <h3 className="text-xl font-normal tracking-[-0.01em]" style={serif}>
+          {project.title}
+        </h3>
+        <span className="text-sm font-light text-black/50">{project.kind[locale]}</span>
+        <span className="text-xs text-black/40" style={mono}>
+          {project.year}
+        </span>
+        <span className="ml-auto">
+          <ProjectLinks project={project} locale={locale} />
+        </span>
+      </div>
     </motion.div>
   );
 }

@@ -2,11 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion, type PanInfo } from "motion/react";
-import type { Locale } from "@/content/site";
-import { site } from "@/content/site";
+import type { L, Locale, Project } from "@/content/site";
+import { featuredProjects, site } from "@/content/site";
 import { ui } from "@/lib/i18n";
 
-const projects = site.projects;
+const projects = featuredProjects;
+
+// проект → название группы, к которой он принадлежит
+const groupTitleByProject = new Map<string, L>();
+for (const group of site.workGroups) {
+  for (const p of group.projects) groupTitleByProject.set(p.id, group.title);
+}
 
 function transformFor(offset: number) {
   const abs = Math.abs(offset);
@@ -81,7 +87,12 @@ export function WorkSlider({ locale }: { locale: Locale }) {
                 data-cursor
                 aria-label={p.title}
               >
-                <Card project={p} locale={locale} active={isActive} />
+                <Card
+                  project={p}
+                  groupTitle={groupTitleByProject.get(p.id)}
+                  locale={locale}
+                  active={isActive}
+                />
               </motion.div>
             );
           })}
@@ -128,10 +139,12 @@ export function WorkSlider({ locale }: { locale: Locale }) {
 
 function Card({
   project,
+  groupTitle,
   locale,
   active,
 }: {
-  project: (typeof projects)[number];
+  project: Project;
+  groupTitle?: L;
   locale: Locale;
   active: boolean;
 }) {
@@ -167,6 +180,14 @@ function Card({
         <span className="absolute right-5 top-5 rounded-full bg-black/45 px-3 py-1 text-[10px] uppercase tracking-wider text-white/70 backdrop-blur">
           {project.solo ? ui.project.solo[locale] : "team"} · {project.year}
         </span>
+        {groupTitle && (
+          <span
+            className="absolute bottom-4 left-5 rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[10px] uppercase tracking-wider backdrop-blur"
+            style={{ color: project.accent }}
+          >
+            {groupTitle[locale]}
+          </span>
+        )}
       </div>
 
       <div className="flex h-[calc(100%-10rem)] flex-col p-6 sm:h-[calc(100%-12rem)] sm:p-7">
@@ -199,20 +220,40 @@ function Card({
             ))}
           </div>
 
-          <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
             <span className="text-xs text-white/45">{project.role[locale]}</span>
-            {project.link ? (
-              <a
-                href={project.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-cursor
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-black transition-transform hover:scale-105"
-                style={{ background: project.accent }}
-              >
-                {ui.project.visit[locale]} ↗
-              </a>
+            {project.links.length > 0 ? (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {project.links.map((l) =>
+                  l.kind === "live" ? (
+                    <a
+                      key={l.href}
+                      href={l.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-cursor
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-black transition-transform hover:scale-105"
+                      style={{ background: project.accent }}
+                    >
+                      {l.label[locale]} ↗
+                    </a>
+                  ) : (
+                    <a
+                      key={l.href}
+                      href={l.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-cursor
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition-transform hover:scale-105"
+                      style={{ borderColor: `${project.accent}66`, color: project.accent }}
+                    >
+                      {l.label[locale]} ↗
+                    </a>
+                  )
+                )}
+              </div>
             ) : (
               <span className="text-[11px] uppercase tracking-wider text-white/35">
                 {ui.project.noLink[locale]}

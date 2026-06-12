@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import Lenis from "lenis";
 import {
   motion,
@@ -10,7 +10,7 @@ import {
   useTransform,
   type Variants,
 } from "motion/react";
-import { site } from "@/content/site";
+import { site, type L, type Locale, type Project } from "@/content/site";
 import { ui } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
 import { ShaderBackground } from "./ShaderBackground";
@@ -20,6 +20,18 @@ import { PhysicsPlayground } from "./PhysicsPlayground";
 import { SkillsWheel } from "./SkillsWheel";
 
 const ACCENT = "#c6ff3a";
+
+const MORE_WORK: L = { ru: "И ещё", en: "More work" };
+
+// группы, в которых есть компактные проекты (для блока «остальные работы»)
+const compactGroups = site.workGroups
+  .map((g) => ({
+    id: g.id,
+    title: g.title,
+    blurb: g.blurb,
+    projects: g.projects.filter((p) => p.tier === "compact"),
+  }))
+  .filter((g) => g.projects.length > 0);
 
 /* ─── helpers ─────────────────────────────────────────────── */
 
@@ -170,6 +182,44 @@ function AiToolChip({ name }: { name: string }) {
       )}
       {name}
     </span>
+  );
+}
+
+function CompactRow({ project, locale }: { project: Project; locale: Locale }) {
+  return (
+    <div
+      className="group flex flex-col gap-2 px-5 py-4 transition-colors hover:bg-white/[0.03] sm:flex-row sm:items-center sm:gap-5"
+      style={{ "--pa": project.accent } as CSSProperties}
+    >
+      <span
+        className="shrink-0 text-base font-semibold text-white transition-colors group-hover:text-[var(--pa)] sm:w-40"
+        style={{ fontFamily: "var(--font-clash)" }}
+      >
+        {project.title}
+      </span>
+      <span className="shrink-0 text-[11px] uppercase tracking-wider text-white/40 sm:w-48">
+        {project.kind[locale]} · {project.year}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-sm text-white/55">
+        {project.summary[locale]}
+      </span>
+      {project.links.length > 0 && (
+        <span className="flex shrink-0 flex-wrap items-center gap-1.5">
+          {project.links.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-cursor
+              className="rounded-full border border-white/15 px-2.5 py-1 text-[11px] text-white/60 transition-colors hover:border-[var(--pa)] hover:text-[var(--pa)]"
+            >
+              {l.label[locale]} ↗
+            </a>
+          ))}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -328,6 +378,38 @@ export function HyperMode() {
         </Reveal>
 
         <WorkSlider locale={locale} />
+
+        {/* остальные работы — компактные строки по группам */}
+        <div className="mt-24">
+          <Reveal>
+            <h3
+              className="text-3xl font-bold sm:text-4xl"
+              style={{ fontFamily: "var(--font-clash)" }}
+            >
+              {MORE_WORK[locale]}
+            </h3>
+          </Reveal>
+          <div className="mt-8 flex flex-col gap-12">
+            {compactGroups.map((g, gi) => (
+              <Reveal key={g.id} delay={gi * 0.06}>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <h4
+                    className="text-xl font-semibold"
+                    style={{ fontFamily: "var(--font-clash)" }}
+                  >
+                    {g.title[locale]}
+                  </h4>
+                  <p className="text-xs text-white/40">{g.blurb[locale]}</p>
+                </div>
+                <div className="mt-4 divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+                  {g.projects.map((p) => (
+                    <CompactRow key={p.id} project={p} locale={locale} />
+                  ))}
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ABOUT */}

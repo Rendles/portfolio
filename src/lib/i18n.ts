@@ -18,7 +18,7 @@ export const ui = {
   },
   sections: {
     workTitle: { ru: "Избранные работы", en: "Selected work" },
-    workSub: { ru: "Пять продуктов: дизайн целиком, фронтенд — соло или в команде.", en: "Five products: full design, frontend solo or in a team." },
+    workSub: { ru: "От SaaS-платформ до пет-проектов — по типу работы и моей роли.", en: "From SaaS platforms to pet projects — by type of work and my role." },
     aboutTitle: { ru: "Кто я", en: "Who I am" },
     skillsTitle: { ru: "Чем владею", en: "What I do" },
     aiTitle: { ru: "ИИ как инструмент", en: "AI as a tool" },
@@ -29,7 +29,7 @@ export const ui = {
     role: { ru: "Роль", en: "Role" },
     stack: { ru: "Стек", en: "Stack" },
     visit: { ru: "Открыть сайт", en: "Visit site" },
-    noLink: { ru: "под NDA · по запросу", en: "under NDA · on request" },
+    noLink: { ru: "без публичной ссылки", en: "no public link" },
     solo: { ru: "соло", en: "solo" },
   },
   switcher: {

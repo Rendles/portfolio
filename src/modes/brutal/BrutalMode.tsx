@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { site } from "@/content/site";
+import { allProjects, site } from "@/content/site";
 import { ui } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
 
@@ -146,75 +146,168 @@ export function BrutalMode() {
 
       {/* WORK */}
       <section id="b-work" className="scroll-mt-16 border-b-[3px] border-black px-4 py-12 sm:px-8">
-        <div className="mb-8 flex items-end justify-between">
+        <div className="mb-10 flex items-end justify-between">
           <h2 className="text-4xl font-black uppercase sm:text-6xl" style={font}>
             {ui.sections.workTitle[locale]}
           </h2>
-          <Label>// 05 PROJECTS</Label>
+          <Label>// {String(allProjects.length).padStart(2, "0")} PROJECTS</Label>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {site.projects.map((p, i) => {
-            const color = PALETTE[i % PALETTE.length];
+        <div className="space-y-14">
+          {site.workGroups.map((g, gi) => {
+            const groupColor = PALETTE[gi % PALETTE.length];
+            const full = g.projects.filter((p) => p.tier === "full");
+            const compact = g.projects.filter((p) => p.tier === "compact");
             return (
-              <motion.article
-                key={p.id}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.25 }}
-                className="group border-[3px] border-black bg-white shadow-[8px_8px_0_#000] transition-all hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-[2px_2px_0_#000]"
-              >
-                <div
-                  className="flex items-center justify-between border-b-[3px] border-black px-5 py-3"
-                  style={{ background: color }}
+              <div key={g.id}>
+                {/* group header */}
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.25 }}
+                  className="mb-6"
                 >
-                  <span className="text-3xl font-black" style={font}>
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="font-mono text-xs font-bold uppercase">
-                    {p.solo ? ui.project.solo[locale] : "TEAM"} · {p.year}
-                  </span>
-                </div>
-                <div className="p-5">
-                  <Label>{p.kind[locale]}</Label>
-                  <h3 className="mt-1 text-2xl font-black uppercase sm:text-3xl" style={font}>
-                    {p.title}
-                  </h3>
-                  <p className="mt-3 text-sm font-medium leading-relaxed">{p.summary[locale]}</p>
-
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {p.stack.map((s) => (
-                      <span
-                        key={s}
-                        className="border-2 border-black px-2 py-0.5 font-mono text-[11px] font-bold uppercase"
-                      >
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 flex items-center justify-between border-t-[3px] border-black pt-4">
-                    <span className="font-mono text-xs font-bold uppercase text-black/60">
-                      {p.role[locale]}
+                  <div className="flex flex-wrap items-baseline gap-3">
+                    <span
+                      className="inline-block border-[3px] border-black bg-black px-4 py-1.5 text-2xl font-black uppercase text-white sm:text-4xl"
+                      style={{ ...font, boxShadow: `6px 6px 0 ${groupColor}` }}
+                    >
+                      {g.title[locale]}
                     </span>
-                    {p.link ? (
-                      <a
-                        href={p.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="border-[3px] border-black bg-black px-4 py-1.5 font-mono text-xs font-bold uppercase text-white transition-colors hover:bg-[#ffe800] hover:text-black"
-                      >
-                        {ui.project.visit[locale]} ↗
-                      </a>
-                    ) : (
-                      <span className="font-mono text-[11px] font-bold uppercase text-black/40">
-                        {ui.project.noLink[locale]}
-                      </span>
-                    )}
+                    <Label>// {String(gi + 1).padStart(2, "0")}</Label>
                   </div>
-                </div>
-              </motion.article>
+                  <p className="mt-4 max-w-2xl font-mono text-xs font-bold uppercase tracking-wider text-black/60">
+                    &gt; {g.blurb[locale]}
+                  </p>
+                </motion.div>
+
+                {/* full cards */}
+                {full.length > 0 && (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {full.map((p, i) => {
+                      const color = PALETTE[(gi + i) % PALETTE.length];
+                      return (
+                        <motion.article
+                          key={p.id}
+                          initial={{ opacity: 0, y: 24 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true, margin: "-40px" }}
+                          transition={{ duration: 0.25 }}
+                          className="group border-[3px] border-black bg-white shadow-[8px_8px_0_#000] transition-all hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-[2px_2px_0_#000]"
+                        >
+                          <div
+                            className="flex items-center justify-between border-b-[3px] border-black px-5 py-3"
+                            style={{ background: color }}
+                          >
+                            <span className="text-3xl font-black" style={font}>
+                              {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <span className="font-mono text-xs font-bold uppercase">
+                              {p.solo ? ui.project.solo[locale] : "TEAM"} · {p.year}
+                            </span>
+                          </div>
+                          <div className="p-5">
+                            <Label>{p.kind[locale]}</Label>
+                            <h3 className="mt-1 text-2xl font-black uppercase sm:text-3xl" style={font}>
+                              {p.title}
+                            </h3>
+                            <p className="mt-3 text-sm font-medium leading-relaxed">{p.summary[locale]}</p>
+
+                            <div className="mt-4 flex flex-wrap gap-1.5">
+                              {p.stack.map((s) => (
+                                <span
+                                  key={s}
+                                  className="border-2 border-black px-2 py-0.5 font-mono text-[11px] font-bold uppercase"
+                                >
+                                  {s}
+                                </span>
+                              ))}
+                            </div>
+
+                            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t-[3px] border-black pt-4">
+                              <span className="font-mono text-xs font-bold uppercase text-black/60">
+                                {p.role[locale]}
+                              </span>
+                              {p.links.length > 0 ? (
+                                <span className="flex flex-wrap gap-2">
+                                  {p.links.map((l) => (
+                                    <a
+                                      key={l.href}
+                                      href={l.href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={
+                                        l.kind === "live"
+                                          ? "border-[3px] border-black bg-black px-4 py-1.5 font-mono text-xs font-bold uppercase text-white transition-colors hover:bg-[#ffe800] hover:text-black"
+                                          : "border-[3px] border-black bg-white px-4 py-1.5 font-mono text-xs font-bold uppercase text-black transition-colors hover:bg-black hover:text-white"
+                                      }
+                                    >
+                                      {l.label[locale]} ↗
+                                    </a>
+                                  ))}
+                                </span>
+                              ) : (
+                                <span className="font-mono text-[11px] font-bold uppercase text-black/40">
+                                  {ui.project.noLink[locale]}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </motion.article>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* compact rows */}
+                {compact.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ duration: 0.25 }}
+                    className={`border-[3px] border-black bg-white shadow-[8px_8px_0_#000] ${full.length > 0 ? "mt-6" : ""}`}
+                  >
+                    {compact.map((p, i) => (
+                      <div
+                        key={p.id}
+                        className="group/row flex flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-3 transition-colors hover:bg-black hover:text-white sm:px-5 [&:not(:last-child)]:border-b-[3px] [&:not(:last-child)]:border-black"
+                      >
+                        <span className="font-mono text-xs font-bold text-black/40 group-hover/row:text-white/50">
+                          {String(full.length + i + 1).padStart(2, "0")}
+                        </span>
+                        <span className="text-lg font-black uppercase" style={font}>
+                          {p.title}
+                        </span>
+                        <span className="hidden font-mono text-[11px] font-bold uppercase text-black/60 group-hover/row:text-white/60 md:inline">
+                          {p.kind[locale]}
+                        </span>
+                        <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-xs font-bold uppercase">
+                          <span className="text-black/50 group-hover/row:text-white/60">{p.year}</span>
+                          {p.links.length > 0 ? (
+                            p.links.map((l) => (
+                              <a
+                                key={l.href}
+                                href={l.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline decoration-2 underline-offset-4 transition-colors hover:bg-[#ffe800] hover:text-black group-hover/row:decoration-[#ffe800]"
+                              >
+                                [{l.label[locale]} ↗]
+                              </a>
+                            ))
+                          ) : (
+                            <span className="text-black/40 group-hover/row:text-white/40">
+                              {ui.project.noLink[locale]}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </div>
             );
           })}
         </div>
