@@ -29,7 +29,6 @@ export const ui = {
     role: { ru: "Роль", en: "Role" },
     stack: { ru: "Стек", en: "Stack" },
     visit: { ru: "Открыть сайт", en: "Visit site" },
-    demo: { ru: "Живое демо", en: "Live demo" },
     noLink: { ru: "без публичной ссылки", en: "no public link" },
     solo: { ru: "соло", en: "solo" },
   },

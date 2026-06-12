@@ -2,8 +2,6 @@
 
 import { motion } from "motion/react";
 import { allProjects, site } from "@/content/site";
-import { useExhibit } from "@/exhibits/ExhibitProvider";
-import { hasExhibit } from "@/exhibits/registry";
 import { ui } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
 
@@ -54,7 +52,6 @@ function Label({ children }: { children: React.ReactNode }) {
 
 export function BrutalMode() {
   const { locale } = useApp();
-  const { openExhibit } = useExhibit();
   const font = { fontFamily: "var(--font-cabinet)" };
   const mono = { fontFamily: "var(--font-mono)" };
 
@@ -232,17 +229,8 @@ export function BrutalMode() {
                               <span className="font-mono text-xs font-bold uppercase text-black/60">
                                 {p.role[locale]}
                               </span>
-                              {p.links.length > 0 || hasExhibit(p.id) ? (
+                              {p.links.length > 0 ? (
                                 <span className="flex flex-wrap gap-2">
-                                  {hasExhibit(p.id) && (
-                                    <button
-                                      type="button"
-                                      onClick={() => openExhibit(p.id)}
-                                      className="border-[3px] border-black bg-[#ffe800] px-4 py-1.5 font-mono text-xs font-bold uppercase text-black shadow-[4px_4px_0_#000] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-black hover:text-[#ffe800] hover:shadow-[1px_1px_0_#000]"
-                                    >
-                                      ▶ {ui.project.demo[locale]}
-                                    </button>
-                                  )}
                                   {p.links.map((l) => (
                                     <a
                                       key={l.href}

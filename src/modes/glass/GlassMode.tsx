@@ -5,8 +5,6 @@ import { motion } from "motion/react";
 import { featuredProjects, site, type Project, type ProjectLink } from "@/content/site";
 import { ui, type Locale } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
-import { useExhibit } from "@/exhibits/ExhibitProvider";
-import { hasExhibit } from "@/exhibits/registry";
 
 /* ─── палитра ─── */
 const ACCENT = "#7cc6ff";
@@ -113,8 +111,6 @@ function ProjectCard({
   locale: Locale;
 }) {
   const head = { fontFamily: "var(--font-satoshi)" };
-  const { openExhibit } = useExhibit();
-  const demo = hasExhibit(p.id);
   return (
     <motion.div
       initial={{ opacity: 0, y: 26 }}
@@ -164,18 +160,8 @@ function ProjectCard({
             <span className="text-[11px] uppercase tracking-wider text-white/45">
               {p.role[locale]}
             </span>
-            {demo || p.links.length > 0 ? (
+            {p.links.length > 0 ? (
               <span className="flex flex-wrap items-center gap-2">
-                {demo && (
-                  <button
-                    type="button"
-                    onClick={() => openExhibit(p.id)}
-                    className="rounded-full border border-[#7cc6ff]/60 bg-[#7cc6ff]/25 px-4 py-1.5 text-xs font-medium text-[#dcefff] transition-colors hover:bg-[#7cc6ff]/40"
-                    style={{ boxShadow: "0 0 18px -4px rgba(124,198,255,0.55)" }}
-                  >
-                    ▶ {ui.project.demo[locale]}
-                  </button>
-                )}
                 {p.links.map((l) => (
                   <LinkPill key={l.href} link={l} locale={locale} />
                 ))}

@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { site, type Locale, type ProjectLink } from "@/content/site";
-import { useExhibit } from "@/exhibits/ExhibitProvider";
-import { hasExhibit } from "@/exhibits/registry";
 import { ui } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
 
@@ -37,18 +35,12 @@ function ProjectLinks({
   links,
   locale,
   compact = false,
-  projectId,
 }: {
   links: ProjectLink[];
   locale: Locale;
   compact?: boolean;
-  /** id проекта — если передан и для него есть экспонат, первой рисуем кнопку [demo] */
-  projectId?: string;
 }) {
-  const { openExhibit } = useExhibit();
-  const demo = projectId !== undefined && hasExhibit(projectId);
-
-  if (links.length === 0 && !demo) {
+  if (links.length === 0) {
     return (
       <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/35">
         {ui.project.noLink[locale]}
@@ -57,16 +49,6 @@ function ProjectLinks({
   }
   return (
     <span className={`flex flex-wrap ${compact ? "gap-1.5" : "gap-2"}`}>
-      {demo && (
-        <button
-          type="button"
-          onClick={() => openExhibit(projectId!)}
-          className="inline-flex cursor-pointer items-center gap-1.5 border border-[#34ff8a] bg-[#34ff8a] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#050806] transition-all hover:bg-[#d6ffe8] hover:border-[#d6ffe8]"
-          style={{ boxShadow: `0 0 16px ${GREEN}44` }}
-        >
-          [demo] {ui.project.demo[locale]} ▸
-        </button>
-      )}
       {links.map((l) => (
         <a
           key={l.href}
@@ -488,7 +470,7 @@ export function ArcadeMode() {
                             <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/45">
                               {p.role[locale]}
                             </span>
-                            <ProjectLinks links={p.links} locale={locale} projectId={p.id} />
+                            <ProjectLinks links={p.links} locale={locale} />
                           </div>
                         </motion.article>
                       ))}

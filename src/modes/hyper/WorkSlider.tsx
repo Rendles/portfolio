@@ -5,8 +5,6 @@ import { motion, type PanInfo } from "motion/react";
 import type { L, Locale, Project } from "@/content/site";
 import { featuredProjects, site } from "@/content/site";
 import { ui } from "@/lib/i18n";
-import { useExhibit } from "@/exhibits/ExhibitProvider";
-import { hasExhibit } from "@/exhibits/registry";
 
 const projects = featuredProjects;
 
@@ -151,7 +149,6 @@ function Card({
   active: boolean;
 }) {
   const n = String(projects.indexOf(project) + 1).padStart(2, "0");
-  const { openExhibit } = useExhibit();
   return (
     <div
       className="h-[440px] overflow-hidden rounded-3xl border text-left backdrop-blur-md sm:h-[540px]"
@@ -225,27 +222,8 @@ function Card({
 
           <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
             <span className="text-xs text-white/45">{project.role[locale]}</span>
-            {project.links.length > 0 || hasExhibit(project.id) ? (
+            {project.links.length > 0 ? (
               <div className="flex flex-wrap items-center justify-end gap-2">
-                {hasExhibit(project.id) && (
-                  <button
-                    type="button"
-                    data-cursor
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openExhibit(project.id);
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wider text-black transition-transform hover:scale-105"
-                    style={{
-                      background: project.accent,
-                      borderColor: project.accent,
-                      boxShadow: `0 0 16px ${project.accent}66, 0 0 2px ${project.accent}`,
-                    }}
-                  >
-                    <span aria-hidden>▶</span>
-                    {ui.project.demo[locale]}
-                  </button>
-                )}
                 {project.links.map((l) =>
                   l.kind === "live" ? (
                     <a
