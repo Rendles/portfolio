@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import Lenis from "lenis";
 import {
   motion,
@@ -10,28 +11,30 @@ import {
   useTransform,
   type Variants,
 } from "motion/react";
-import { site, type L, type Locale, type Project } from "@/content/site";
+import { site, type Locale, type Project, type WorkGroup } from "@/content/site";
 import { ui } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
 import { ShaderBackground } from "./ShaderBackground";
 import { HyperCursor } from "./HyperCursor";
-import { WorkSlider } from "./WorkSlider";
 import { PhysicsPlayground } from "./PhysicsPlayground";
 import { SkillsWheel } from "./SkillsWheel";
+import { GameEmbed } from "@/demos/GameEmbed";
+
+// живое демо Sprouter — отдельный чанк, грузится только на клиенте
+const SprouterDemo = dynamic(
+  () => import("@/demos/sprouter/SprouterDemo").then((m) => m.SprouterDemo),
+  { ssr: false }
+);
 
 const ACCENT = "#c6ff3a";
 
-const MORE_WORK: L = { ru: "И ещё", en: "More work" };
-
-// группы, в которых есть компактные проекты (для блока «остальные работы»)
-const compactGroups = site.workGroups
-  .map((g) => ({
-    id: g.id,
-    title: g.title,
-    blurb: g.blurb,
-    projects: g.projects.filter((p) => p.tier === "compact"),
-  }))
-  .filter((g) => g.projects.length > 0);
+// сквозная нумерация full-проектов (для декоративных плашек и чередования)
+const fullIndexById = new Map<string, number>();
+{
+  let n = 0;
+  for (const g of site.workGroups)
+    for (const p of g.projects) if (p.tier === "full") fullIndexById.set(p.id, n++);
+}
 
 /* ─── helpers ─────────────────────────────────────────────── */
 
@@ -185,26 +188,184 @@ function AiToolChip({ name }: { name: string }) {
   );
 }
 
-function CompactRow({ project, locale }: { project: Project; locale: Locale }) {
+/* ─── work section ────────────────────────────────────────── */
+
+function LinkButtons({ project, locale }: { project: Project; locale: Locale }) {
+  if (project.links.length === 0) {
+    return (
+      <span className="text-[11px] uppercase tracking-wider text-white/35">
+        {ui.project.noLink[locale]}
+      </span>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2.5">
+      {project.links.map((l) =>
+        l.kind === "live" ? (
+          <a
+            key={l.href}
+            href={l.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-cursor
+            className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-bold text-black transition-transform hover:scale-105"
+            style={{ background: project.accent }}
+          >
+            {l.label[locale]} ↗
+          </a>
+        ) : (
+          <a
+            key={l.href}
+            href={l.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-cursor
+            className="inline-flex items-center gap-1.5 rounded-full border px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-105"
+            style={{ borderColor: `${project.accent}66`, color: project.accent }}
+          >
+            {l.label[locale]} ↗
+          </a>
+        )
+      )}
+    </div>
+  );
+}
+
+// декоративная плашка full-проекта (позже сюда встанет живое демо)
+function VisualPlate({ project, num }: { project: Project; num: number }) {
   return (
     <div
-      className="group flex flex-col gap-2 px-5 py-4 transition-colors hover:bg-white/[0.03] sm:flex-row sm:items-center sm:gap-5"
-      style={{ "--pa": project.accent } as CSSProperties}
+      className="relative flex h-[300px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 sm:h-[440px]"
+      style={{ background: `linear-gradient(135deg, ${project.accent}30, #0a0a0e 72%)` }}
     >
       <span
-        className="shrink-0 text-base font-semibold text-white transition-colors group-hover:text-[var(--pa)] sm:w-40"
-        style={{ fontFamily: "var(--font-clash)" }}
+        aria-hidden
+        className="absolute -bottom-10 -right-4 select-none text-[12rem] font-bold leading-none opacity-20 sm:text-[16rem]"
+        style={{ fontFamily: "var(--font-clash)", color: project.accent }}
+      >
+        {project.title.slice(0, 2)}
+      </span>
+      <span
+        aria-hidden
+        className="absolute left-6 top-5 text-6xl font-bold"
+        style={{ fontFamily: "var(--font-clash)", color: project.accent }}
+      >
+        {String(num + 1).padStart(2, "0")}
+      </span>
+      <span className="absolute right-5 top-6 rounded-full bg-black/45 px-3 py-1 text-[10px] uppercase tracking-wider text-white/70 backdrop-blur">
+        {project.year}
+      </span>
+      <span
+        className="select-none text-4xl font-bold uppercase tracking-tight opacity-80 sm:text-5xl"
+        style={{ fontFamily: "var(--font-clash)", color: project.accent }}
       >
         {project.title}
       </span>
-      <span className="shrink-0 text-[11px] uppercase tracking-wider text-white/40 sm:w-48">
+    </div>
+  );
+}
+
+// рамка живого демо Sprouter — самоиграющее, некликабельное
+function SprouterFrame({ project, locale }: { project: Project; locale: Locale }) {
+  return (
+    <div className="relative">
+      <div
+        className="overflow-hidden rounded-2xl border border-white/10"
+        style={{
+          boxShadow: `0 0 36px ${project.accent}26, 0 0 90px ${project.accent}12`,
+        }}
+      >
+        <SprouterDemo locale={locale} />
+      </div>
+      <span
+        className="absolute left-1/2 top-0 z-20 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[9px] font-medium tracking-[0.2em]"
+        style={{
+          borderColor: `${project.accent}55`,
+          background: "#0a0a0e",
+          color: project.accent,
+        }}
+      >
+        <span
+          className="size-1.5 animate-pulse rounded-full"
+          style={{ background: project.accent }}
+        />
+        LIVE DEMO
+      </span>
+    </div>
+  );
+}
+
+// большая карточка full-проекта: текст + визуальный блок, чередуем лево/право
+function FullProjectCard({ project, locale }: { project: Project; locale: Locale }) {
+  const num = fullIndexById.get(project.id) ?? 0;
+  const flip = num % 2 === 1;
+  return (
+    <Reveal>
+      <div className="grid items-center gap-8 md:grid-cols-2 lg:gap-14">
+        <div className={flip ? "md:order-2" : undefined}>
+          <p className="text-[11px] uppercase tracking-[0.25em] text-white/45">
+            {project.kind[locale]}
+          </p>
+          <h4
+            className="mt-2 text-4xl font-bold text-white sm:text-5xl"
+            style={{ fontFamily: "var(--font-clash)" }}
+          >
+            {project.title}
+          </h4>
+          <p className="mt-3 text-sm text-white/50">
+            {project.role[locale]} · {project.year}
+          </p>
+          <p className="mt-5 max-w-xl leading-relaxed text-white/65">
+            {project.summary[locale]}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-1.5">
+            {project.stack.map((s) => (
+              <span
+                key={s}
+                className="rounded-full border border-white/12 px-2.5 py-1 text-[11px] text-white/55"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+          <div className="mt-7">
+            <LinkButtons project={project} locale={locale} />
+          </div>
+        </div>
+
+        <div className={flip ? "md:order-1" : undefined}>
+          {project.id === "sprouter" ? (
+            <SprouterFrame project={project} locale={locale} />
+          ) : (
+            <VisualPlate project={project} num={num} />
+          )}
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+// маленькая карточка compact-проекта
+function CompactCard({ project, locale }: { project: Project; locale: Locale }) {
+  return (
+    <div
+      className="group flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition-colors hover:border-[var(--pa)] hover:bg-white/[0.04]"
+      style={{ "--pa": project.accent } as CSSProperties}
+    >
+      <h5
+        className="text-lg font-semibold text-white transition-colors group-hover:text-[var(--pa)]"
+        style={{ fontFamily: "var(--font-clash)" }}
+      >
+        {project.title}
+      </h5>
+      <p className="mt-1 text-[11px] uppercase tracking-wider text-white/40">
         {project.kind[locale]} · {project.year}
-      </span>
-      <span className="min-w-0 flex-1 truncate text-sm text-white/55">
+      </p>
+      <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-white/55">
         {project.summary[locale]}
-      </span>
+      </p>
       {project.links.length > 0 && (
-        <span className="flex shrink-0 flex-wrap items-center gap-1.5">
+        <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-4">
           {project.links.map((l) => (
             <a
               key={l.href}
@@ -217,7 +378,117 @@ function CompactRow({ project, locale }: { project: Project; locale: Locale }) {
               {l.label[locale]} ↗
             </a>
           ))}
-        </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// широкая игровая карточка (gravitysmash): играбельный embed + инфострока
+function GameProjectCard({ project, locale }: { project: Project; locale: Locale }) {
+  return (
+    <Reveal>
+      <div
+        className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]"
+        style={{ "--pa": project.accent } as CSSProperties}
+      >
+        <GameEmbed
+          locale={locale}
+          title="Gravity Smash"
+          src="https://gravity-smash.vercel.app/"
+          accent="#9d6bff"
+        />
+        <div className="flex flex-col gap-2 border-t border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:gap-5">
+          <span
+            className="shrink-0 text-base font-semibold text-white"
+            style={{ fontFamily: "var(--font-clash)" }}
+          >
+            {project.title}
+          </span>
+          <span className="shrink-0 text-[11px] uppercase tracking-wider text-white/40">
+            {project.kind[locale]} · {project.year}
+          </span>
+          <span className="min-w-0 flex-1 text-sm text-white/55 sm:truncate">
+            {project.summary[locale]}
+          </span>
+          <span className="flex shrink-0 flex-wrap items-center gap-1.5">
+            {project.links.map((l) => (
+              <a
+                key={l.href}
+                href={l.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-cursor
+                className="rounded-full border border-white/15 px-2.5 py-1 text-[11px] text-white/60 transition-colors hover:border-[var(--pa)] hover:text-[var(--pa)]"
+              >
+                {l.label[locale]} ↗
+              </a>
+            ))}
+          </span>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+// подсекция группы работ: заголовок + большие карточки + сетка маленьких
+function WorkGroupSection({
+  group,
+  index,
+  locale,
+}: {
+  group: WorkGroup;
+  index: number;
+  locale: Locale;
+}) {
+  const full = group.projects.filter((p) => p.tier === "full");
+  const game = group.projects.find((p) => p.id === "gravitysmash");
+  const compact = group.projects.filter(
+    (p) => p.tier === "compact" && p.id !== "gravitysmash"
+  );
+
+  return (
+    <div>
+      <Reveal>
+        <div className="flex items-baseline gap-4">
+          <span
+            className="font-mono text-sm tracking-[0.2em]"
+            style={{ color: ACCENT }}
+          >
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <h3
+            className="text-[clamp(2rem,5.5vw,3.75rem)] font-bold leading-tight text-white"
+            style={{ fontFamily: "var(--font-clash)" }}
+          >
+            {group.title[locale]}
+          </h3>
+        </div>
+        <p className="mt-3 max-w-xl text-white/55">{group.blurb[locale]}</p>
+      </Reveal>
+
+      {full.length > 0 && (
+        <div className="mt-14 flex flex-col gap-20 sm:gap-28">
+          {full.map((p) => (
+            <FullProjectCard key={p.id} project={p} locale={locale} />
+          ))}
+        </div>
+      )}
+
+      {game && (
+        <div className="mt-14">
+          <GameProjectCard project={game} locale={locale} />
+        </div>
+      )}
+
+      {compact.length > 0 && (
+        <Reveal delay={0.08} className="mt-10">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {compact.map((p) => (
+              <CompactCard key={p.id} project={p} locale={locale} />
+            ))}
+          </div>
+        </Reveal>
       )}
     </div>
   );
@@ -377,38 +648,11 @@ export function HyperMode() {
           </div>
         </Reveal>
 
-        <WorkSlider locale={locale} />
-
-        {/* остальные работы — компактные строки по группам */}
-        <div className="mt-24">
-          <Reveal>
-            <h3
-              className="text-3xl font-bold sm:text-4xl"
-              style={{ fontFamily: "var(--font-clash)" }}
-            >
-              {MORE_WORK[locale]}
-            </h3>
-          </Reveal>
-          <div className="mt-8 flex flex-col gap-12">
-            {compactGroups.map((g, gi) => (
-              <Reveal key={g.id} delay={gi * 0.06}>
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                  <h4
-                    className="text-xl font-semibold"
-                    style={{ fontFamily: "var(--font-clash)" }}
-                  >
-                    {g.title[locale]}
-                  </h4>
-                  <p className="text-xs text-white/40">{g.blurb[locale]}</p>
-                </div>
-                <div className="mt-4 divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-                  {g.projects.map((p) => (
-                    <CompactRow key={p.id} project={p} locale={locale} />
-                  ))}
-                </div>
-              </Reveal>
-            ))}
-          </div>
+        {/* группы работ — каждая как полноценная подсекция */}
+        <div className="mt-4 flex flex-col gap-28 sm:gap-36">
+          {site.workGroups.map((g, gi) => (
+            <WorkGroupSection key={g.id} group={g} index={gi} locale={locale} />
+          ))}
         </div>
       </section>
 

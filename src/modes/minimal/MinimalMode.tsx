@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { motion } from "motion/react";
-import { site, type Locale, type Project } from "@/content/site";
+import { site, featuredProjects, type Locale, type Project, type WorkGroup } from "@/content/site";
 import { ui } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
+import { GameEmbed } from "@/demos/GameEmbed";
+
+// Демо Sprouter — только на клиенте: внутри таймеры и анимированный сценарий.
+const SprouterDemo = dynamic(
+  () => import("@/demos/sprouter/SprouterDemo").then((m) => m.SprouterDemo),
+  { ssr: false }
+);
 
 const PAPER = "#f6f5f1";
 const INK = "#1a1916";
@@ -125,7 +133,7 @@ export function MinimalMode() {
       {/* WORK */}
       <section id="m-work" className="mx-auto max-w-6xl scroll-mt-20 px-6 py-16 sm:px-10">
         <Reveal>
-          <div className="mb-10 flex items-baseline justify-between border-b border-black/10 pb-4">
+          <div className="flex items-baseline justify-between border-b border-black/10 pb-4">
             <h2 className="text-3xl font-normal sm:text-4xl" style={serif}>
               {ui.sections.workTitle[locale]}
             </h2>
@@ -133,33 +141,10 @@ export function MinimalMode() {
           </div>
         </Reveal>
 
-        <div>
-          {site.workGroups.map((group, gi) => {
-            const offset = site.workGroups
-              .slice(0, gi)
-              .reduce((n, g) => n + g.projects.length, 0);
-            return (
-              <div key={group.id} className={gi > 0 ? "mt-16 border-t border-black/10 pt-14" : ""}>
-                <Reveal>
-                  <div className="mb-6 max-w-2xl">
-                    <Eyebrow>{group.title[locale]}</Eyebrow>
-                    <p className="mt-2.5 text-sm font-light leading-relaxed text-black/50">
-                      {group.blurb[locale]}
-                    </p>
-                  </div>
-                </Reveal>
-                <div>
-                  {group.projects.map((p, i) =>
-                    p.tier === "full" ? (
-                      <WorkRow key={p.id} project={p} index={offset + i} locale={locale} />
-                    ) : (
-                      <CompactRow key={p.id} project={p} index={offset + i} locale={locale} />
-                    )
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="mt-16 space-y-24 sm:mt-20 sm:space-y-36">
+          {site.workGroups.map((group, gi) => (
+            <GroupSection key={group.id} group={group} index={gi} locale={locale} />
+          ))}
         </div>
       </section>
 
@@ -328,99 +313,227 @@ function ProjectLinks({ project, locale }: { project: Project; locale: Locale })
   );
 }
 
-function WorkRow({
-  project,
+/* ------------------------------------------------------------------ */
+/* Работы: группа = «рубрика журнала»                                  */
+/* ------------------------------------------------------------------ */
+
+function GroupSection({
+  group,
   index,
   locale,
 }: {
-  project: Project;
+  group: WorkGroup;
   index: number;
   locale: Locale;
 }) {
-  const [open, setOpen] = useState(false);
+  const fulls = group.projects.filter((p) => p.tier === "full");
+  const game = group.projects.find((p) => p.id === "gravitysmash");
+  const compacts = group.projects.filter(
+    (p) => p.tier === "compact" && p.id !== "gravitysmash"
+  );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 18 }}
+    <div>
+      {/* Шапка рубрики */}
+      <Reveal>
+        <div className="border-t border-black/15 pt-8 sm:pt-10">
+          <Eyebrow>
+            {locale === "ru" ? "Раздел" : "Section"}{" "}
+            {String(index + 1).padStart(2, "0")}
+          </Eyebrow>
+          <h3
+            className="mt-5 text-4xl font-normal tracking-[-0.015em] sm:text-5xl"
+            style={serif}
+          >
+            {group.title[locale]}
+          </h3>
+          <p className="mt-4 max-w-xl text-sm font-light leading-relaxed text-black/50 sm:text-base">
+            {group.blurb[locale]}
+          </p>
+        </div>
+      </Reveal>
+
+      {/* Большие редакционные карточки */}
+      {fulls.length > 0 && (
+        <div className="mt-6 sm:mt-8">
+          {fulls.map((p) => (
+            <FeatureCard key={p.id} project={p} locale={locale} />
+          ))}
+        </div>
+      )}
+
+      {/* Широкая карточка с игрой */}
+      {game && <GameFeature project={game} locale={locale} />}
+
+      {/* Сетка маленьких карточек */}
+      {compacts.length > 0 && (
+        <div
+          className={`mt-14 grid gap-x-10 sm:grid-cols-2 ${
+            compacts.length > 2 ? "lg:grid-cols-3" : ""
+          }`}
+        >
+          {compacts.map((p, i) => (
+            <CompactCard key={p.id} project={p} locale={locale} delay={i * 0.06} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FeatureCard({ project, locale }: { project: Project; locale: Locale }) {
+  const number = featuredProjects.findIndex((p) => p.id === project.id) + 1;
+  const isSprouter = project.id === "sprouter";
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+      className="border-t border-black/10 py-12 first:border-t-0 sm:py-16"
     >
-      <div
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-        className="group border-b border-black/10 py-7"
-      >
-        <div className="flex items-baseline justify-between gap-4">
-          <div className="flex items-baseline gap-5">
-            <span className="text-sm text-black/35" style={mono}>
-              {String(index + 1).padStart(2, "0")}
-            </span>
-            <h3
-              className="text-3xl font-normal tracking-[-0.01em] transition-transform duration-500 group-hover:translate-x-2 sm:text-5xl"
+      <div className="grid gap-x-10 gap-y-6 md:grid-cols-[96px_minmax(0,1fr)]">
+        {/* Крупная цифра-номер */}
+        <span
+          aria-hidden
+          className="hidden text-6xl font-light leading-none text-black/[0.13] md:block"
+          style={serif}
+        >
+          {String(number).padStart(2, "0")}
+        </span>
+
+        <div>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+            <h4
+              className="text-3xl font-normal tracking-[-0.015em] sm:text-5xl"
               style={serif}
             >
               {project.title}
-            </h3>
+            </h4>
+            <span className="text-sm text-black/40" style={mono}>
+              {project.year}
+            </span>
           </div>
-          <span className="hidden shrink-0 text-sm text-black/45 sm:block">
-            {project.year} · {project.solo ? ui.project.solo[locale] : locale === "ru" ? "команда" : "team"}
-          </span>
-        </div>
 
-        <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pl-0 sm:pl-10">
-          <p className="text-sm text-black/55">{project.kind[locale]}</p>
-          <ProjectLinks project={project} locale={locale} />
-        </div>
+          <p className="mt-3 text-sm text-black/55">
+            {project.kind[locale]}
+            <span className="mx-2 text-black/25" aria-hidden>
+              —
+            </span>
+            {project.role[locale]}
+          </p>
 
-        <motion.div
-          initial={false}
-          animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="overflow-hidden sm:pl-10"
-        >
-          <p className="max-w-2xl pt-4 text-black/70">{project.summary[locale]}</p>
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 pb-1 text-xs text-black/45" style={mono}>
+          <p className="mt-5 max-w-2xl leading-relaxed text-black/70">
+            {project.summary[locale]}
+          </p>
+
+          <div
+            className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-black/45"
+            style={mono}
+          >
             {project.stack.map((s) => (
               <span key={s}>{s}</span>
             ))}
           </div>
-        </motion.div>
+
+          <div className="mt-5">
+            <ProjectLinks project={project} locale={locale} />
+          </div>
+
+          {/* «Фотография в развороте»: живая реконструкция Sprouter */}
+          {isSprouter && (
+            <figure className="mt-10">
+              <div
+                className="pointer-events-none select-none border border-black/10"
+                aria-hidden
+              >
+                <SprouterDemo locale={locale} />
+              </div>
+              <figcaption
+                className="mt-3 text-sm italic text-black/45"
+                style={serif}
+              >
+                {locale === "ru"
+                  ? "Живая реконструкция интерфейса — данные синтетические."
+                  : "A live interface reconstruction — the data is synthetic."}
+              </figcaption>
+            </figure>
+          )}
+        </div>
       </div>
-    </motion.div>
+    </motion.article>
   );
 }
 
-function CompactRow({
+function GameFeature({ project, locale }: { project: Project; locale: Locale }) {
+  return (
+    <motion.figure
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+      className="mt-12 sm:mt-14"
+    >
+      <div className="border border-black/10">
+        <GameEmbed
+          locale={locale}
+          title="Gravity Smash"
+          src="https://gravity-smash.vercel.app/"
+          accent="#9d6bff"
+        />
+      </div>
+      <figcaption className="mt-5 grid gap-x-10 gap-y-4 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div>
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <span className="text-2xl font-normal tracking-[-0.01em]" style={serif}>
+              {project.title}
+            </span>
+            <span className="text-sm text-black/55">{project.kind[locale]}</span>
+            <span className="text-xs text-black/40" style={mono}>
+              {project.year}
+            </span>
+          </div>
+          <p className="mt-2.5 max-w-2xl text-sm font-light leading-relaxed text-black/60">
+            {project.summary[locale]}
+          </p>
+        </div>
+        <div className="md:pt-1">
+          <ProjectLinks project={project} locale={locale} />
+        </div>
+      </figcaption>
+    </motion.figure>
+  );
+}
+
+function CompactCard({
   project,
-  index,
   locale,
+  delay,
 }: {
   project: Project;
-  index: number;
   locale: Locale;
+  delay: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+      className="border-t border-black/10 py-6"
     >
-      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 border-b border-black/[0.07] py-4">
-        <span className="text-xs text-black/30" style={mono}>
-          {String(index + 1).padStart(2, "0")}
-        </span>
-        <h3 className="text-xl font-normal tracking-[-0.01em]" style={serif}>
+      <div className="flex items-baseline justify-between gap-4">
+        <h4 className="text-xl font-normal tracking-[-0.01em]" style={serif}>
           {project.title}
-        </h3>
-        <span className="text-sm font-light text-black/50">{project.kind[locale]}</span>
+        </h4>
         <span className="text-xs text-black/40" style={mono}>
           {project.year}
         </span>
-        <span className="ml-auto">
-          <ProjectLinks project={project} locale={locale} />
-        </span>
+      </div>
+      <p className="mt-1.5 text-sm font-light text-black/55">{project.kind[locale]}</p>
+      <div className="mt-4">
+        <ProjectLinks project={project} locale={locale} />
       </div>
     </motion.div>
   );

@@ -1,15 +1,31 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { site, type Locale, type ProjectLink } from "@/content/site";
+import { site, type Locale, type Project, type ProjectLink } from "@/content/site";
 import { ui } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
+import { GameEmbed } from "@/demos/GameEmbed";
 
 /* ─── палитра терминала ─── */
 const GREEN = "#34ff8a";
 const AMBER = "#ffb000";
 const BG = "#050806";
+
+/* ─── живое демо Sprouter: только на клиенте, с терминальным лоадером ─── */
+const SprouterDemo = dynamic(
+  () => import("@/demos/sprouter/SprouterDemo").then((m) => m.SprouterDemo),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[440px] w-full flex-col items-center justify-center gap-3 bg-[#0d1117] font-mono text-xs uppercase tracking-[0.25em] text-[#34ff8a]/60">
+        <span>{"> "}mounting live_demo.app ...</span>
+        <span style={{ animation: "hp-blink 1s steps(1) infinite" }}>█</span>
+      </div>
+    ),
+  }
+);
 
 const AI_SLUGS: Record<string, string | undefined> = {
   Claude: "claude",
@@ -217,6 +233,78 @@ function SectionHead({ cmd, title }: { cmd: string; title: string }) {
   );
 }
 
+/* ─── угловые скобки рамки-экспоната ─── */
+function Corners({ color = GREEN }: { color?: string }) {
+  const side = 12;
+  const bw = 2;
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute"
+        style={{ left: -bw, top: -bw, width: side, height: side, borderLeft: `${bw}px solid ${color}`, borderTop: `${bw}px solid ${color}` }}
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute"
+        style={{ right: -bw, top: -bw, width: side, height: side, borderRight: `${bw}px solid ${color}`, borderTop: `${bw}px solid ${color}` }}
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute"
+        style={{ left: -bw, bottom: -bw, width: side, height: side, borderLeft: `${bw}px solid ${color}`, borderBottom: `${bw}px solid ${color}` }}
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute"
+        style={{ right: -bw, bottom: -bw, width: side, height: side, borderRight: `${bw}px solid ${color}`, borderBottom: `${bw}px solid ${color}` }}
+      />
+    </>
+  );
+}
+
+/* ─── текстовая часть большой карточки: путь, заголовок, описание, стек ─── */
+function FullCardText({ p, gid, locale }: { p: Project; gid: string; locale: Locale }) {
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] uppercase tracking-wider text-[#34ff8a]/50">
+        <span>
+          ./{gid}/{p.id}
+        </span>
+        <span style={{ color: p.solo ? AMBER : undefined }}>
+          {p.solo ? `[${ui.project.solo[locale]}]` : "[team]"} · {p.year}
+        </span>
+      </div>
+
+      <h4
+        className="mt-2 text-2xl font-bold uppercase sm:text-3xl"
+        style={{ textShadow: `0 0 18px ${GREEN}44` }}
+      >
+        {p.title}
+      </h4>
+      <div className="mt-1 text-xs uppercase tracking-wider text-[#34ff8a]/60">
+        {p.kind[locale]}
+      </div>
+
+      <p className="mt-3 text-sm leading-relaxed text-[#d6ffe8]/75">
+        <span className="text-[#34ff8a]/40">{"// "}</span>
+        {p.summary[locale]}
+      </p>
+
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {p.stack.map((s) => (
+          <span
+            key={s}
+            className="border border-[#34ff8a]/25 px-2 py-0.5 text-[11px] text-[#34ff8a]/70"
+          >
+            {s}
+          </span>
+        ))}
+      </div>
+    </>
+  );
+}
+
 /* ─── режим ─── */
 export function ArcadeMode() {
   const { locale } = useApp();
@@ -386,10 +474,17 @@ export function ArcadeMode() {
         {/* WORK — DIRECTORIES */}
         <section id="a-work" className="scroll-mt-16 px-4 py-16 sm:px-8">
           <SectionHead cmd="ls ./projects -R" title={ui.sections.workTitle[locale]} />
-          <div className="space-y-14">
-            {site.workGroups.map((g) => {
+          <div className="space-y-20 sm:space-y-24">
+            {site.workGroups.map((g, gi) => {
               const full = g.projects.filter((p) => p.tier === "full");
-              const compact = g.projects.filter((p) => p.tier === "compact");
+              // sprouter — флагман с живым демо, рендерится отдельной широкой картой
+              const demoFull = full.filter((p) => p.id === "sprouter");
+              const restFull = full.filter((p) => p.id !== "sprouter");
+              // gravitysmash — игровой автомат, широкая карта вместо мелкой
+              const game = g.projects.find((p) => p.id === "gravitysmash");
+              const compact = g.projects.filter(
+                (p) => p.tier === "compact" && p.id !== "gravitysmash"
+              );
               return (
                 <div key={g.id}>
                   {/* заголовок группы: команда + комментарий */}
@@ -398,114 +493,197 @@ export function ArcadeMode() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-40px" }}
                     transition={{ duration: 0.3 }}
-                    className="mb-6"
+                    className="mb-8"
                   >
-                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span className="text-xs uppercase tracking-[0.2em] text-[#34ff8a]/50">
-                        {"> "}ls ./{g.id}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs uppercase tracking-[0.2em] text-[#34ff8a]/50">
+                      <span className="text-[#34ff8a]/35">
+                        [{String(gi + 1).padStart(2, "0")}]
                       </span>
-                      <h3
-                        className="text-2xl font-bold uppercase tracking-tight sm:text-3xl"
-                        style={{ textShadow: `0 0 18px ${GREEN}44` }}
-                      >
-                        {g.title[locale]}
-                      </h3>
-                      <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/40">
+                      <span>
+                        <span className="text-[#34ff8a]">{"> "}</span>ls ./{g.id}
+                      </span>
+                      <span className="hidden h-px min-w-10 flex-1 bg-[#34ff8a]/15 sm:block" />
+                      <span className="text-[#34ff8a]/40">
                         [{g.projects.length} items]
                       </span>
                     </div>
-                    <p className="mt-1.5 max-w-2xl text-sm text-[#34ff8a]/55">
+                    <h3
+                      className="mt-3 text-3xl font-bold uppercase tracking-tight sm:text-4xl"
+                      style={{ textShadow: `0 0 20px ${GREEN}55` }}
+                    >
+                      {g.title[locale]}
+                    </h3>
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#34ff8a]/55">
                       <span className="text-[#34ff8a]/35"># </span>
                       {g.blurb[locale]}
                     </p>
                   </motion.div>
 
-                  {/* полные карточки */}
-                  {full.length > 0 && (
-                    <div className="grid gap-5 md:grid-cols-2">
-                      {full.map((p, i) => (
-                        <motion.article
-                          key={p.id}
-                          initial={{ opacity: 0, y: 22 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          viewport={{ once: true, margin: "-40px" }}
-                          transition={{ duration: 0.3, delay: (i % 2) * 0.05 }}
-                          className="group relative border border-[#34ff8a]/25 bg-[#34ff8a]/[0.02] p-5 transition-all hover:border-[#34ff8a]/70 hover:bg-[#34ff8a]/[0.05]"
-                          style={{ boxShadow: "0 0 0 rgba(52,255,138,0)" }}
-                        >
-                          <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-[#34ff8a]/50">
-                            <span>./{g.id}/{p.id}</span>
-                            <span style={{ color: p.solo ? AMBER : undefined }}>
-                              {p.solo ? `[${ui.project.solo[locale]}]` : "[team]"} · {p.year}
-                            </span>
-                          </div>
-
-                          <h4
-                            className="mt-2 text-2xl font-bold uppercase sm:text-3xl"
-                            style={{ textShadow: `0 0 18px ${GREEN}44` }}
-                          >
-                            {p.title}
-                          </h4>
-                          <div className="mt-1 text-xs uppercase tracking-wider text-[#34ff8a]/60">
-                            {p.kind[locale]}
-                          </div>
-
-                          <p className="mt-3 text-sm leading-relaxed text-[#d6ffe8]/75">
-                            <span className="text-[#34ff8a]/40">{"// "}</span>
-                            {p.summary[locale]}
-                          </p>
-
-                          <div className="mt-4 flex flex-wrap gap-1.5">
-                            {p.stack.map((s) => (
-                              <span
-                                key={s}
-                                className="border border-[#34ff8a]/25 px-2 py-0.5 text-[11px] text-[#34ff8a]/70"
-                              >
-                                {s}
+                  <div className="space-y-5">
+                    {/* флагманская карточка с живым демо */}
+                    {demoFull.map((p) => (
+                      <motion.article
+                        key={p.id}
+                        initial={{ opacity: 0, y: 22 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-40px" }}
+                        transition={{ duration: 0.35 }}
+                        className="group relative border border-[#34ff8a]/25 bg-[#34ff8a]/[0.02] p-5 transition-colors hover:border-[#34ff8a]/60 sm:p-6"
+                      >
+                        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+                          <div className="flex flex-col">
+                            <FullCardText p={p} gid={g.id} locale={locale} />
+                            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#34ff8a]/15 pt-4 lg:mt-auto">
+                              <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/45">
+                                {p.role[locale]}
                               </span>
-                            ))}
+                              <ProjectLinks links={p.links} locale={locale} />
+                            </div>
                           </div>
 
-                          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#34ff8a]/15 pt-4">
-                            <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/45">
-                              {p.role[locale]}
+                          {/* рамка-экспонат: живой стрим интерфейса */}
+                          <div className="relative mt-1 border border-[#34ff8a]/40 bg-[#0d1117] p-1 sm:p-1.5">
+                            <Corners />
+                            <span className="absolute -top-2.5 left-4 z-10 bg-[#050806] px-2 text-[10px] font-bold uppercase tracking-[0.25em] text-[#34ff8a]/80">
+                              [stream] live_demo.app
                             </span>
-                            <ProjectLinks links={p.links} locale={locale} />
+                            <span
+                              className="absolute -top-2 right-4 z-10 flex items-center gap-1.5 bg-[#050806] px-2 text-[10px] uppercase tracking-[0.2em] text-[#34ff8a]/60"
+                              aria-hidden="true"
+                            >
+                              <span
+                                className="size-1.5 rounded-full bg-[#34ff8a]"
+                                style={{ animation: "hp-blink 1.4s steps(1) infinite" }}
+                              />
+                              rec
+                            </span>
+                            <SprouterDemo locale={locale} />
                           </div>
-                        </motion.article>
-                      ))}
-                    </div>
-                  )}
+                        </div>
+                      </motion.article>
+                    ))}
 
-                  {/* компактные строки листинга */}
-                  {compact.length > 0 && (
-                    <motion.ul
-                      initial={{ opacity: 0, y: 16 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: "-40px" }}
-                      transition={{ duration: 0.3 }}
-                      className={`divide-y divide-[#34ff8a]/10 border border-[#34ff8a]/20 ${full.length > 0 ? "mt-5" : ""}`}
-                    >
-                      {compact.map((p) => (
-                        <li
-                          key={p.id}
-                          className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors hover:bg-[#34ff8a]/[0.06]"
-                        >
-                          <span className="text-[11px] text-[#34ff8a]/35">-rw-</span>
-                          <span className="text-sm font-bold uppercase text-[#d6ffe8]/90 transition-colors group-hover:text-[#34ff8a]">
-                            {p.title}
+                    {/* остальные полные карточки */}
+                    {restFull.length > 0 && (
+                      <div className="grid gap-5 md:grid-cols-2">
+                        {restFull.map((p, i) => (
+                          <motion.article
+                            key={p.id}
+                            initial={{ opacity: 0, y: 22 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-40px" }}
+                            transition={{ duration: 0.3, delay: (i % 2) * 0.05 }}
+                            className="group relative flex flex-col border border-[#34ff8a]/25 bg-[#34ff8a]/[0.02] p-5 transition-all hover:border-[#34ff8a]/70 hover:bg-[#34ff8a]/[0.05]"
+                          >
+                            <FullCardText p={p} gid={g.id} locale={locale} />
+                            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#34ff8a]/15 pt-4 lg:mt-auto lg:pt-5">
+                              <span className="text-[11px] uppercase tracking-wider text-[#34ff8a]/45">
+                                {p.role[locale]}
+                              </span>
+                              <ProjectLinks links={p.links} locale={locale} />
+                            </div>
+                          </motion.article>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* игровой автомат: вставь монетку */}
+                    {game && (
+                      <motion.article
+                        initial={{ opacity: 0, y: 22 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-40px" }}
+                        transition={{ duration: 0.35 }}
+                        className="relative border border-[#9d6bff]/45 bg-[#9d6bff]/[0.04]"
+                        style={{ boxShadow: "0 0 32px rgba(157,107,255,0.12)" }}
+                      >
+                        <Corners color="#9d6bff" />
+                        {/* маркиза автомата */}
+                        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-[#9d6bff]/35 bg-[#9d6bff]/10 px-4 py-2.5">
+                          <span
+                            className="text-xs font-bold uppercase tracking-[0.3em] text-[#c9aaff]"
+                            style={{ animation: "hp-blink 1.6s steps(1) infinite" }}
+                          >
+                            [insert coin]
                           </span>
-                          <span className="text-xs uppercase tracking-wider text-[#34ff8a]/55">
-                            {p.kind[locale]}
+                          <span className="text-[11px] uppercase tracking-wider text-[#9d6bff]/80">
+                            ./{g.id}/{game.id} ·{" "}
+                            <span style={{ color: AMBER }}>
+                              [{ui.project.solo[locale]}]
+                            </span>{" "}
+                            · {game.year}
                           </span>
-                          <span className="text-xs tabular-nums text-[#34ff8a]/40">{p.year}</span>
-                          <span className="ml-auto">
-                            <ProjectLinks links={p.links} locale={locale} compact />
-                          </span>
-                        </li>
-                      ))}
-                    </motion.ul>
-                  )}
+                        </div>
+
+                        {/* экран автомата — кликабельный постер, ничего не перехватываем */}
+                        <div className="p-1.5 sm:p-2">
+                          <GameEmbed
+                            locale={locale}
+                            title="Gravity Smash"
+                            src="https://gravity-smash.vercel.app/"
+                            accent="#9d6bff"
+                          />
+                        </div>
+
+                        {/* панель управления автомата */}
+                        <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-[#9d6bff]/35 px-4 py-4 sm:px-5">
+                          <div className="min-w-[200px] flex-1">
+                            <div className="text-lg font-bold uppercase text-[#d6ffe8]">
+                              {game.title}
+                              <span className="ml-3 text-xs font-normal uppercase tracking-wider text-[#9d6bff]/80">
+                                {game.kind[locale]}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-sm leading-relaxed text-[#d6ffe8]/70">
+                              <span className="text-[#9d6bff]/60">{"// "}</span>
+                              {game.summary[locale]}
+                            </p>
+                            <div className="mt-2.5 flex flex-wrap gap-1.5">
+                              {game.stack.map((s) => (
+                                <span
+                                  key={s}
+                                  className="border border-[#9d6bff]/30 px-2 py-0.5 text-[11px] text-[#c9aaff]/80"
+                                >
+                                  {s}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <ProjectLinks links={game.links} locale={locale} />
+                        </div>
+                      </motion.article>
+                    )}
+
+                    {/* компактные карточки: 2–3 в ряд */}
+                    {compact.length > 0 && (
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {compact.map((p, i) => (
+                          <motion.article
+                            key={p.id}
+                            initial={{ opacity: 0, y: 16 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-40px" }}
+                            transition={{ duration: 0.3, delay: (i % 3) * 0.05 }}
+                            className="group flex flex-col border border-[#34ff8a]/20 bg-[#34ff8a]/[0.02] p-4 transition-all hover:border-[#34ff8a]/70 hover:bg-[#34ff8a]/[0.06] hover:shadow-[0_0_24px_rgba(52,255,138,0.14)]"
+                          >
+                            <div className="flex items-baseline justify-between gap-3 text-[10px] uppercase tracking-wider text-[#34ff8a]/40">
+                              <span className="truncate">-rw- ./{p.id}</span>
+                              <span className="tabular-nums">{p.year}</span>
+                            </div>
+                            <h4 className="mt-2 text-base font-bold uppercase text-[#d6ffe8]/90 transition-colors group-hover:text-[#34ff8a]">
+                              {p.title}
+                            </h4>
+                            <div className="mt-0.5 text-[11px] uppercase tracking-wider text-[#34ff8a]/55">
+                              {p.kind[locale]}
+                            </div>
+                            <div className="mt-3 border-t border-[#34ff8a]/10 pt-3">
+                              <ProjectLinks links={p.links} locale={locale} compact />
+                            </div>
+                          </motion.article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}

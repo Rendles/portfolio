@@ -1,10 +1,23 @@
 "use client";
 
 import { useRef } from "react";
+import dynamic from "next/dynamic";
 import { motion } from "motion/react";
 import { featuredProjects, site, type Project, type ProjectLink } from "@/content/site";
 import { ui, type Locale } from "@/lib/i18n";
 import { useApp } from "@/providers/AppProviders";
+import { GameEmbed } from "@/demos/GameEmbed";
+
+/* живое демо Sprouter — только на клиенте, без SSR */
+const SprouterDemo = dynamic(
+  () => import("@/demos/sprouter/SprouterDemo").then((m) => m.SprouterDemo),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[440px] w-full animate-pulse bg-white/[0.04]" />
+    ),
+  }
+);
 
 /* ─── палитра ─── */
 const ACCENT = "#7cc6ff";
@@ -100,76 +113,174 @@ function SectionHead({ kicker, title }: { kicker: string; title: string }) {
   );
 }
 
-/* полная стеклянная карточка проекта */
-function ProjectCard({
+/* стеклянная рамка с живым демо Sprouter: некликабельная, с ярлыком LIVE */
+function SprouterFrame({ locale }: { locale: Locale }) {
+  return (
+    <div className="relative">
+      {/* свечение за рамкой */}
+      <div
+        className="pointer-events-none absolute -inset-3 rounded-[2rem] opacity-60 blur-2xl"
+        style={{
+          background:
+            "radial-gradient(60% 60% at 50% 40%, rgba(19,214,163,0.30), transparent 70%)",
+        }}
+      />
+      <div
+        className="relative overflow-hidden rounded-3xl border border-white/15"
+        style={{
+          boxShadow:
+            "0 0 0 1px rgba(19,214,163,0.14), inset 0 1px 0 0 rgba(255,255,255,0.16), 0 30px 70px -28px rgba(19,214,163,0.45)",
+        }}
+      >
+        {/* демо живёт само по себе — кликов не принимает */}
+        <div className="pointer-events-none select-none" aria-hidden="true">
+          <SprouterDemo locale={locale} />
+        </div>
+        <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-[#13d6a3]/40 bg-[#04101e]/75 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#3ee8bd]">
+          <span
+            className="size-1.5 animate-pulse rounded-full bg-[#13d6a3]"
+            style={{ boxShadow: "0 0 8px #13d6a3" }}
+          />
+          LIVE
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* декоративный визуал для full-карточек без живого демо */
+function DecorVisual({ project: p, locale }: { project: Project; locale: Locale }) {
+  return (
+    <div
+      className="relative flex min-h-[240px] items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] lg:min-h-[300px]"
+      style={{ boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.08)" }}
+    >
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `radial-gradient(70% 85% at 50% 115%, ${p.accent}38, transparent 65%)`,
+        }}
+      />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 size-72 -translate-x-1/2 -translate-y-1/2 rounded-full border"
+        style={{ borderColor: `${p.accent}2e` }}
+      />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 size-48 -translate-x-1/2 -translate-y-1/2 rounded-full border"
+        style={{ borderColor: `${p.accent}1f` }}
+      />
+      <span
+        className="select-none text-[6.5rem] font-semibold leading-none lg:text-[8rem]"
+        style={{
+          fontFamily: "var(--font-satoshi)",
+          color: p.accent,
+          textShadow: `0 0 60px ${p.accent}77`,
+        }}
+        aria-hidden="true"
+      >
+        {p.title[0]}
+      </span>
+      <div className="absolute inset-x-0 bottom-4 flex flex-wrap justify-center gap-1.5 px-4">
+        {p.tags.map((t) => (
+          <span
+            key={t.en}
+            className="rounded-full border border-white/12 bg-[#070b14]/55 px-2.5 py-1 text-[10px] uppercase tracking-wider text-white/55"
+          >
+            {t[locale]}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* большая стеклянная карточка full-проекта: текст + визуальный блок, лево/право чередуются */
+function FullCard({
   project: p,
   index,
+  flip,
   locale,
 }: {
   project: Project;
   index: number;
+  flip: boolean;
   locale: Locale;
 }) {
   const head = { fontFamily: "var(--font-satoshi)" };
   return (
     <motion.div
-      initial={{ opacity: 0, y: 26 }}
+      initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.4, delay: (index % 2) * 0.06 }}
-      className="h-full"
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.45 }}
     >
-      <Glass className="group/card relative h-full overflow-hidden p-6 transition-colors hover:border-white/30 sm:p-7">
+      <Glass className="group/card relative overflow-hidden p-6 transition-colors hover:border-white/30 sm:p-8">
         {/* акцентное свечение проекта */}
         <div
-          className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full opacity-40 blur-3xl transition-opacity duration-500 group-hover/card:opacity-70"
+          className={`pointer-events-none absolute -top-20 size-56 rounded-full opacity-35 blur-3xl transition-opacity duration-500 group-hover/card:opacity-60 ${
+            flip ? "-left-20" : "-right-20"
+          }`}
           style={{ background: p.accent }}
         />
-        <div className="relative">
-          <div className="flex items-center justify-between">
-            <span
-              className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] uppercase tracking-wider"
-              style={{ color: p.solo ? "#ffd27c" : "rgba(255,255,255,0.6)" }}
-            >
-              {p.solo ? ui.project.solo[locale] : "team"} · {p.year}
-            </span>
-            <span className="text-xs uppercase tracking-wider text-white/40">
-              0{index + 1}
-            </span>
-          </div>
-
-          <h3 className="mt-4 text-2xl font-semibold text-white sm:text-3xl" style={head}>
-            {p.title}
-          </h3>
-          <div className="mt-1 text-sm text-[#7cc6ff]/80">{p.kind[locale]}</div>
-
-          <p className="mt-4 text-sm leading-relaxed text-white/65">{p.summary[locale]}</p>
-
-          <div className="mt-5 flex flex-wrap gap-1.5">
-            {p.stack.map((s) => (
+        <div className="relative grid items-center gap-8 lg:grid-cols-2">
+          {/* текст */}
+          <div className={flip ? "lg:order-2" : undefined}>
+            <div className="flex items-center justify-between">
               <span
-                key={s}
-                className="rounded-full border border-white/12 bg-white/5 px-2.5 py-1 text-[11px] text-white/60"
+                className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] uppercase tracking-wider"
+                style={{ color: p.solo ? "#ffd27c" : "rgba(255,255,255,0.6)" }}
               >
-                {s}
+                {p.solo ? ui.project.solo[locale] : "team"} · {p.year}
               </span>
-            ))}
+              <span className="text-xs uppercase tracking-wider text-white/40">
+                0{index + 1}
+              </span>
+            </div>
+
+            <h3 className="mt-5 text-3xl font-semibold text-white sm:text-4xl" style={head}>
+              {p.title}
+            </h3>
+            <div className="mt-1 text-sm text-[#7cc6ff]/80">{p.kind[locale]}</div>
+
+            <p className="mt-4 text-sm leading-relaxed text-white/65 sm:text-base">
+              {p.summary[locale]}
+            </p>
+
+            <div className="mt-5 flex flex-wrap gap-1.5">
+              {p.stack.map((s) => (
+                <span
+                  key={s}
+                  className="rounded-full border border-white/12 bg-white/5 px-2.5 py-1 text-[11px] text-white/60"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+              <span className="text-[11px] uppercase tracking-wider text-white/45">
+                {p.role[locale]}
+              </span>
+              {p.links.length > 0 ? (
+                <span className="flex flex-wrap items-center gap-2">
+                  {p.links.map((l) => (
+                    <LinkPill key={l.href} link={l} locale={locale} />
+                  ))}
+                </span>
+              ) : (
+                <span className="text-[11px] uppercase tracking-wider text-white/35">
+                  {ui.project.noLink[locale]}
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
-            <span className="text-[11px] uppercase tracking-wider text-white/45">
-              {p.role[locale]}
-            </span>
-            {p.links.length > 0 ? (
-              <span className="flex flex-wrap items-center gap-2">
-                {p.links.map((l) => (
-                  <LinkPill key={l.href} link={l} locale={locale} />
-                ))}
-              </span>
+          {/* визуальный блок */}
+          <div className={flip ? "lg:order-1" : undefined}>
+            {p.id === "sprouter" ? (
+              <SprouterFrame locale={locale} />
             ) : (
-              <span className="text-[11px] uppercase tracking-wider text-white/35">
-                {ui.project.noLink[locale]}
-              </span>
+              <DecorVisual project={p} locale={locale} />
             )}
           </div>
         </div>
@@ -178,8 +289,65 @@ function ProjectCard({
   );
 }
 
-/* компактная строка-пилюля: без backdrop-blur, чтобы не плодить слои на мобильных */
-function CompactRow({
+/* широкая игровая карточка Gravity Smash: кликабельный GameEmbed + инфострока */
+function GameCard({ project: p, locale }: { project: Project; locale: Locale }) {
+  const head = { fontFamily: "var(--font-satoshi)" };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.45 }}
+    >
+      <Glass className="group/card relative overflow-hidden p-5 transition-colors hover:border-white/30 sm:p-6">
+        <div
+          className="pointer-events-none absolute -right-20 -top-20 size-56 rounded-full opacity-30 blur-3xl"
+          style={{ background: p.accent }}
+        />
+        <div className="relative">
+          <div className="mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <h3 className="text-2xl font-semibold text-white sm:text-3xl" style={head}>
+              {p.title}
+            </h3>
+            <span className="text-sm text-[#7cc6ff]/80">{p.kind[locale]}</span>
+            <span className="text-[11px] uppercase tracking-wider text-white/40">
+              {p.year}
+            </span>
+          </div>
+
+          {/* стеклянная рамка с игрой — кликам не мешаем */}
+          <div
+            className="relative overflow-hidden rounded-3xl border border-white/15"
+            style={{
+              boxShadow: `0 0 0 1px ${p.accent}24, inset 0 1px 0 0 rgba(255,255,255,0.14), 0 30px 70px -28px ${p.accent}66`,
+            }}
+          >
+            <GameEmbed
+              locale={locale}
+              title="Gravity Smash"
+              src="https://gravity-smash.vercel.app/"
+              accent="#9d6bff"
+            />
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-2xl text-sm leading-relaxed text-white/65">
+              {p.summary[locale]}
+            </p>
+            <span className="flex flex-wrap items-center gap-2">
+              {p.links.map((l) => (
+                <LinkPill key={l.href} link={l} locale={locale} />
+              ))}
+            </span>
+          </div>
+        </div>
+      </Glass>
+    </motion.div>
+  );
+}
+
+/* маленькая компактная карточка: без своего backdrop-blur — только полупрозрачный фон */
+function CompactCard({
   project: p,
   index,
   locale,
@@ -195,38 +363,38 @@ function CompactRow({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-30px" }}
       transition={{ duration: 0.35, delay: index * 0.05 }}
+      className="h-full"
     >
       <div
-        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 transition-colors hover:border-white/25 hover:bg-white/[0.07] sm:rounded-full sm:px-5"
+        className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.05] p-5 transition-colors hover:border-white/25 hover:bg-white/[0.075]"
         style={{ boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.10)" }}
       >
-        <span
-          className="size-1.5 shrink-0 rounded-full"
-          style={{ background: p.accent, boxShadow: `0 0 8px ${p.accent}` }}
-        />
-        <span className="shrink-0 text-sm font-semibold text-white" style={head}>
-          {p.title}
-        </span>
-        <span className="hidden shrink-0 text-xs text-[#7cc6ff]/75 md:inline">
-          {p.kind[locale]}
-        </span>
-        <span className="hidden shrink-0 text-[11px] uppercase tracking-wider text-white/40 sm:inline">
-          {p.year}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-xs text-white/50">
-          {p.summary[locale]}
-        </span>
-        {p.links.length > 0 ? (
-          <span className="flex shrink-0 items-center gap-1.5">
-            {p.links.map((l) => (
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2">
+            <span
+              className="size-1.5 shrink-0 rounded-full"
+              style={{ background: p.accent, boxShadow: `0 0 8px ${p.accent}` }}
+            />
+            <span className="text-base font-semibold text-white" style={head}>
+              {p.title}
+            </span>
+          </span>
+          <span className="shrink-0 text-[11px] uppercase tracking-wider text-white/40">
+            {p.year}
+          </span>
+        </div>
+        <div className="mt-1.5 text-xs text-[#7cc6ff]/75">{p.kind[locale]}</div>
+        <div className="mt-4 flex flex-1 flex-wrap items-end gap-1.5">
+          {p.links.length > 0 ? (
+            p.links.map((l) => (
               <LinkPill key={l.href} link={l} locale={locale} small />
-            ))}
-          </span>
-        ) : (
-          <span className="shrink-0 text-[10px] uppercase tracking-wider text-white/35">
-            {ui.project.noLink[locale]}
-          </span>
-        )}
+            ))
+          ) : (
+            <span className="text-[10px] uppercase tracking-wider text-white/35">
+              {ui.project.noLink[locale]}
+            </span>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -395,52 +563,61 @@ export function GlassMode() {
         {/* WORK */}
         <section id="g-work" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
           <SectionHead kicker={ui.nav.work[locale]} title={ui.sections.workTitle[locale]} />
-          <div className="space-y-16">
+          <div className="space-y-20 sm:space-y-24">
             {site.workGroups.map((g) => {
               const full = g.projects.filter((p) => p.tier === "full");
-              const compact = g.projects.filter((p) => p.tier === "compact");
+              const game = g.projects.find((p) => p.id === "gravitysmash");
+              const compact = g.projects.filter(
+                (p) => p.tier === "compact" && p.id !== "gravitysmash"
+              );
               return (
                 <div key={g.id}>
-                  {/* заголовок группы */}
+                  {/* плашка группы: заголовок + blurb */}
                   <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-40px" }}
                     transition={{ duration: 0.4 }}
-                    className="mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-1"
+                    className="mb-7"
                   >
-                    <h3
-                      className="text-xl font-semibold tracking-tight text-white sm:text-2xl"
+                    <div
+                      className="inline-flex max-w-full flex-col gap-1 rounded-2xl border border-white/12 bg-white/[0.05] px-6 py-4 backdrop-blur-xl"
                       style={{
-                        ...head,
-                        textShadow: `0 0 24px ${ACCENT}55`,
+                        boxShadow:
+                          "inset 0 1px 0 0 rgba(255,255,255,0.16), 0 16px 44px -18px rgba(0,0,0,0.6)",
                       }}
                     >
-                      {g.title[locale]}
-                    </h3>
-                    <p className="text-sm text-white/50">{g.blurb[locale]}</p>
+                      <h3
+                        className="text-xl font-semibold tracking-tight text-white sm:text-2xl"
+                        style={{ ...head, textShadow: `0 0 24px ${ACCENT}55` }}
+                      >
+                        {g.title[locale]}
+                      </h3>
+                      <p className="text-sm text-white/55">{g.blurb[locale]}</p>
+                    </div>
                   </motion.div>
 
-                  {full.length > 0 && (
-                    <div className="grid gap-5 md:grid-cols-2">
-                      {full.map((p) => (
-                        <ProjectCard
-                          key={p.id}
-                          project={p}
-                          index={featuredProjects.indexOf(p)}
-                          locale={locale}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <div className="space-y-6">
+                    {full.map((p, i) => (
+                      <FullCard
+                        key={p.id}
+                        project={p}
+                        index={featuredProjects.indexOf(p)}
+                        flip={i % 2 === 1}
+                        locale={locale}
+                      />
+                    ))}
 
-                  {compact.length > 0 && (
-                    <div className={`space-y-3 ${full.length > 0 ? "mt-5" : ""}`}>
-                      {compact.map((p, i) => (
-                        <CompactRow key={p.id} project={p} index={i} locale={locale} />
-                      ))}
-                    </div>
-                  )}
+                    {game && <GameCard project={game} locale={locale} />}
+
+                    {compact.length > 0 && (
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {compact.map((p, i) => (
+                          <CompactCard key={p.id} project={p} index={i} locale={locale} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
